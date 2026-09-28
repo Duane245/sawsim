@@ -1,6 +1,6 @@
 <div align="center">
 
-**中文** · [English](README.en.md)
+**中文** · [English](https://github.com/Duane245/sawsim/blob/main/README.en.md)
 
 # SawSim
 
@@ -21,7 +21,7 @@ Piezoelectric coupled FEM for SAW resonator unit cells · Q9 / Hex27 · PML · B
 ## 安装与使用
 
 ```bash
-pip install git+https://github.com/Duane245/sawsim
+pip install sawsim
 pip install "sawsim[fast]"     # 可选：MKL PARDISO 直接求解器
 ```
 
@@ -37,7 +37,7 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
-无图形界面的 Linux 上 Gmsh 需要 `libglu1-mesa libopengl0`。详见 [快速开始](docs/getting-started.md)。
+无图形界面的 Linux 上 Gmsh 需要 `libglu1-mesa libopengl0`。详见 [快速开始](https://github.com/Duane245/sawsim/blob/main/docs/getting-started.md)。
 
 ## 能力
 
@@ -53,19 +53,19 @@ sawsim run config.json -o out/dbl
 
 ## 验证
 
-每个模板与独立的参考有限元解逐点比对；主谐振与反谐振频率全部一致，主谐振区误差 0.1 – 2 %，2D 多层模板在 2.4 GHz 以上高阶模态区存在偏差。完整误差表、图和说明见 [验证](docs/validation.md)。`pytest` 在 5 – 6 个频点上复现该比对。
+每个模板与独立的参考有限元解逐点比对；主谐振与反谐振频率全部一致，主谐振区误差 0.1 – 2 %，2D 多层模板在 2.4 GHz 以上高阶模态区存在偏差。完整误差表、图和说明见 [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md)。`pytest` 在 5 – 6 个频点上复现该比对。
 
 <div align="center">
-<img src="docs/figures/compare_2p5d_double.png" width="640"><br>
+<img src="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/compare_2p5d_double.png" width="640"><br>
 <sub>2.5D SP 双层（LiNbO₃ 0.6 µm / Si 6.51 µm），251 频点。虚线 sawsim，实线参考解，幅值相对 L2 误差 0.15 %。</sub>
 </div>
 
 ## 文档
 
-- [快速开始](docs/getting-started.md) — 安装、第一个算例、输出文件、单位
-- [模型库](docs/models.md) — 九种模板、参数、位移模型、边界与已知限制
-- [材料库与晶体取向](docs/materials-and-orientation.md) — 内置材料、记录格式、自定义导入、ZXZ 欧拉角
-- [验证](docs/validation.md) — 与参考解的逐点比对及解读
+- [快速开始](https://github.com/Duane245/sawsim/blob/main/docs/getting-started.md) — 安装、第一个算例、输出文件、单位
+- [模型库](https://github.com/Duane245/sawsim/blob/main/docs/models.md) — 九种模板、参数、位移模型、边界与已知限制
+- [材料库与晶体取向](https://github.com/Duane245/sawsim/blob/main/docs/materials-and-orientation.md) — 内置材料、记录格式、自定义导入、ZXZ 欧拉角
+- [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md) — 与参考解的逐点比对及解读
 
 ## 项目结构
 
@@ -83,5 +83,5 @@ Python 包 `sawsim` 以 **AGPL-3.0-or-later** 发布（它通过 Python API 链�
 
 ## 引用
 
-引用具体版本请用版本 DOI（v2.0.0：[10.5281/zenodo.22728471](https://doi.org/10.5281/zenodo.22728471)）；引用项目整体请用概念 DOI [10.5281/zenodo.20362278](https://doi.org/10.5281/zenodo.20362278)，它始终指向最新版本。格式见 [CITATION.cff](CITATION.cff)。
+引用具体版本请用版本 DOI（v2.0.0：[10.5281/zenodo.22728471](https://doi.org/10.5281/zenodo.22728471)）；引用项目整体请用概念 DOI [10.5281/zenodo.20362278](https://doi.org/10.5281/zenodo.20362278)，它始终指向最新版本。格式见 [CITATION.cff](https://github.com/Duane245/sawsim/blob/main/CITATION.cff)。
 

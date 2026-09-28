@@ -1,6 +1,6 @@
 <div align="center">
 
-[中文](README.md) · **English**
+[中文](https://github.com/Duane245/sawsim/blob/main/README.md) · **English**
 
 # SawSim
 
@@ -21,7 +21,7 @@ Project name **SawSim**; Python package and command `sawsim`; the hosted service
 ## Install and use
 
 ```bash
-pip install git+https://github.com/Duane245/sawsim
+pip install sawsim
 pip install "sawsim[fast]"     # optional: MKL PARDISO direct solver
 ```
 
@@ -37,7 +37,7 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
-Headless Linux needs `libglu1-mesa libopengl0` for Gmsh. See [Getting started](docs/getting-started.en.md).
+Headless Linux needs `libglu1-mesa libopengl0` for Gmsh. See [Getting started](https://github.com/Duane245/sawsim/blob/main/docs/getting-started.en.md).
 
 ## Capabilities
 
@@ -53,19 +53,19 @@ Headless Linux needs `libglu1-mesa libopengl0` for Gmsh. See [Getting started](d
 
 ## Validation
 
-Each template is compared point by point with an independent reference FEM solution; resonance and anti-resonance frequencies agree for all templates, errors around the main resonance are 0.1 – 2 %, and 2D multilayers deviate above 2.4 GHz in the higher-order mode region. Full error table, figures and discussion in [Validation](docs/validation.en.md). `pytest` reproduces the comparison at 5 – 6 frequencies per template.
+Each template is compared point by point with an independent reference FEM solution; resonance and anti-resonance frequencies agree for all templates, errors around the main resonance are 0.1 – 2 %, and 2D multilayers deviate above 2.4 GHz in the higher-order mode region. Full error table, figures and discussion in [Validation](https://github.com/Duane245/sawsim/blob/main/docs/validation.en.md). `pytest` reproduces the comparison at 5 – 6 frequencies per template.
 
 <div align="center">
-<img src="docs/figures/compare_2p5d_double.png" width="640"><br>
+<img src="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/compare_2p5d_double.png" width="640"><br>
 <sub>2.5D SP double layer (LiNbO₃ 0.6 µm / Si 6.51 µm), 251 points. Dashed: sawsim, solid: reference; relative L2 error of |Y| 0.15 %.</sub>
 </div>
 
 ## Documentation
 
-- [Getting started](docs/getting-started.en.md) — install, first run, output files, units
-- [Models](docs/models.en.md) — the nine templates, parameters, displacement models, boundaries, known limitations
-- [Materials and orientation](docs/materials-and-orientation.en.md) — built-in materials, record format, custom import, ZXZ Euler angles
-- [Validation](docs/validation.en.md) — point-by-point comparison with the reference and how to read it
+- [Getting started](https://github.com/Duane245/sawsim/blob/main/docs/getting-started.en.md) — install, first run, output files, units
+- [Models](https://github.com/Duane245/sawsim/blob/main/docs/models.en.md) — the nine templates, parameters, displacement models, boundaries, known limitations
+- [Materials and orientation](https://github.com/Duane245/sawsim/blob/main/docs/materials-and-orientation.en.md) — built-in materials, record format, custom import, ZXZ Euler angles
+- [Validation](https://github.com/Duane245/sawsim/blob/main/docs/validation.en.md) — point-by-point comparison with the reference and how to read it
 
 ## Repository layout
 
@@ -83,4 +83,4 @@ The Python package `sawsim` is released under **AGPL-3.0-or-later** (it links th
 
 ## Citation
 
-To cite a specific version use its version DOI (v2.0.0: [10.5281/zenodo.22728471](https://doi.org/10.5281/zenodo.22728471)); to cite the project as a whole use the concept DOI [10.5281/zenodo.20362278](https://doi.org/10.5281/zenodo.20362278), which always resolves to the latest version. See [CITATION.cff](CITATION.cff) for the format.
+To cite a specific version use its version DOI (v2.0.0: [10.5281/zenodo.22728471](https://doi.org/10.5281/zenodo.22728471)); to cite the project as a whole use the concept DOI [10.5281/zenodo.20362278](https://doi.org/10.5281/zenodo.20362278), which always resolves to the latest version. See [CITATION.cff](https://github.com/Duane245/sawsim/blob/main/CITATION.cff) for the format.

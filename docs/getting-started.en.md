@@ -5,7 +5,7 @@
 ## Install
 
 ```bash
-pip install git+https://github.com/Duane245/sawsim      # or clone and: pip install -e .
+pip install sawsim      # development version: pip install git+https://github.com/Duane245/sawsim
 pip install "sawsim[fast]"                                # optional: pypardiso (MKL PARDISO direct solver)
 ```
 
