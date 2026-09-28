@@ -1,5 +1,5 @@
 """SawSim: piezoelectric coupled FEM for SAW resonator unit cells."""
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 
 from sawsim import runtime as _runtime  # noqa: F401,E402  (GL shims before gmsh is imported anywhere)
 

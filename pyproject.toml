@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sawsim"
-version = "2.0.1"
+version = "2.0.2"
 description = "SawSim: piezoelectric coupled finite-element solver for SAW resonator unit cells (Q9 / Hex27, PML, Bloch periodicity)"
 readme = "README.md"
 requires-python = ">=3.8"
