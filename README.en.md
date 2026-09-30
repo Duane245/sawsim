@@ -51,13 +51,13 @@ Headless Linux needs `libglu1-mesa libopengl0` for Gmsh. See [Getting started](h
 
 | | |
 |---|---|
-| **Models** | 9 unit-cell templates: five 2D (Q9, incl. TC-SAW) and four 2.5D periodic slices (Hex27), one to four layers |
+| **Models** | 10 unit-cell templates: five 2D (Q9, incl. TC-SAW), four 2.5D periodic slices (Hex27), and the generic stack `sp_stack` (0–6 backing layers + 0–3 coatings) |
 | **Physics** | Fully coupled displacement–potential; ME0 plane strain or ME1 out-of-plane extension; anisotropic crystals rotated by intrinsic ZXZ Euler angles |
 | **Boundaries** | Bloch periodicity left/right, complex-coordinate-stretched PML at the bottom |
 | **Meshing** | Parametric geometry via the Gmsh Python API, quadratic isoparametric elements |
 | **Solve** | Real block form of the complex sparse system, MKL PARDISO or SciPy SuperLU, frequency-parallel sweeps |
 | **Output** | Y11 admittance (CSV / NPZ / JSON), mesh, displacement and potential field plots, material snapshots and source hashes; every run is fully reproducible |
-| **Materials** | Built-in LiNbO₃ (literature), Si, SiO₂, poly-Si, Si₃N₄, Al, Cu; custom JSON import |
+| **Materials** | Built-in LiNbO₃ (literature), Si, SiO₂, poly-Si, Si₃N₄, Al, Cu; custom JSON import, or built from crystal-class constants (isotropic / cubic / 6mm / 3m) |
 
 ## Validation
 

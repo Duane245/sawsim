@@ -63,46 +63,62 @@ def resonances(frequency_hz, admittance, max_modes: int = 5) -> dict:
     df = float(np.max(np.diff(f)))
     out['frequency_step_mhz'] = df * 1e-6
     out['uncertainty_mhz'] = df * 0.5e-6
-    r = int(np.argmax(mag))
-    if r in (0, n - 1):
-        out['warnings'].append('peak_at_band_edge: the |Y| maximum is at the band edge; the true resonance '
-                               'is probably outside the band - widen or shift start_ghz/stop_ghz')
-        return out
-    peaks = _local_extrema(mag, True)
-    nxt = peaks[peaks > r]
-    stop = int(nxt[0]) if len(nxt) else n - 1
-    a = r + int(np.argmin(mag[r:stop + 1]))
-    inv = 1.0 / np.maximum(mag, np.finfo(float).tiny)
+    # |Y|/f removes the static-capacitance slope (|Y| ~ 2 pi f C0), so weakly coupled
+    # resonances appear as a local max (fr) followed by a local min (fa) on a flat background.
+    g = mag / f
+    inv = 1.0 / np.maximum(g, np.finfo(float).tiny)
+    peaks = _local_extrema(g, True)
+    pairs = []  # (score, fr index, fa index, next peak index)
+    for i, p in enumerate(peaks):
+        stop = int(peaks[i + 1]) if i + 1 < len(peaks) else n - 1
+        a = int(p) + int(np.argmin(g[p:stop + 1]))
+        if a == p:
+            continue
+        if a != n - 1 and f[a] - f[p] > 0.15 * f[p]:
+            continue  # broad hump (bulk-wave region), not a resonator pole/zero pair
+        pairs.append(((g[p] - g[a]) / g[p], int(p), a, stop))
+    if not pairs:
+        if int(np.argmax(g)) in (0, n - 1):
+            out['warnings'].append('peak_at_band_edge: the response rises towards the band edge and no resonance '
+                                   'is inside the band - widen or shift start_ghz/stop_ghz')
+        else:
+            out['warnings'].append('no_resonance_found: no resonance/antiresonance pair in band; for weak coupling '
+                                   'increase points so the fr..fa gap is sampled')
+        return _rounded(out)
+    # Main mode: among well-resolved pairs (relative dip >= 0.5, i.e. every strong lossless
+    # resonance) the highest |Y|/f peak; weak resonances compete by relative dip.
+    score, r, a, stop = max(pairs, key=lambda t: (min(t[0], 0.5), g[t[1]]))
     fr = _vfit(f, inv, r)
     out['fr_ghz'] = fr * 1e-9
-    prev_min = _local_extrema(mag, False)
+    prev_min = _local_extrema(g, False)
     lo = int(prev_min[prev_min < r][-1]) if np.any(prev_min < r) else 0
     out['q_r'] = _half_power_q(f, mag, r, lo, a)
-    if a in (r, n - 1):
+    if a == n - 1:
         out['warnings'].append('antiresonance_not_found: no |Y| minimum after fr inside the band - '
                                'extend stop_ghz')
     else:
-        fa = _vfit(f, mag, a)
+        fa = _vfit(f, g, a)
         out['fa_ghz'] = fa * 1e-9
         out['k2eff'] = math.pi ** 2 / 4 * (fa - fr) / fa
         out['points_between_fr_fa'] = int(a - r - 1)
-        out['q_a'] = _half_power_q(f, inv, a, r, stop)
+        out['q_a'] = _half_power_q(f, 1.0 / np.maximum(mag, np.finfo(float).tiny), a, r, stop)
         if a - r < 6:
             out['warnings'].append('coarse_sampling: fewer than 5 samples between fr and fa; zoom the band '
                                    'to about [fr - (fa-fr), fa + (fa-fr)] with >= 81 points')
+    if max(g[0], g[-1]) > 3 * g[r]:
+        out['warnings'].append('stronger_response_at_band_edge: |Y|/f at a band edge exceeds the main peak; '
+                               'a stronger resonance may lie just outside the band')
     if out['q_r'] is None:
         out['notes'].append('Q not resolved at this frequency step (expected: the solver model is lossless, '
                             'so resonances are poles); q_r/q_a are null')
-    mins = _local_extrema(mag, False)
-    for p in sorted(peaks, key=lambda j: -mag[j])[:max_modes]:
-        after = mins[mins > p]
-        out['modes'].append(dict(fr_ghz=_vfit(f, inv, int(p)) * 1e-9,
-                                 fa_ghz=(_vfit(f, mag, int(after[0])) * 1e-9) if len(after) else None,
-                                 peak_abs_y=float(mag[p]), is_main=bool(p == r)))
+    for s, p, q, _ in sorted(pairs, key=lambda t: (min(t[0], 0.5), g[t[1]]), reverse=True)[:max_modes]:
+        out['modes'].append(dict(fr_ghz=_vfit(f, inv, p) * 1e-9,
+                                 fa_ghz=_vfit(f, g, q) * 1e-9 if q != n - 1 else None,
+                                 peak_abs_y=float(mag[p]), strength=float(s), is_main=bool(p == r)))
     out['modes'].sort(key=lambda m: m['fr_ghz'])
-    if sum(1 for m in out['modes'] if m['peak_abs_y'] > 0.1 * mag[r]) > 1:
-        out['warnings'].append('multiple_modes: other peaks above 10% of the main |Y| peak are in band; '
-                               'check that the main pair is the intended mode')
+    if sum(1 for m in out['modes'] if m['strength'] > 0.5 * min(score, 0.5) and m['peak_abs_y'] > 0.1 * mag[r]) > 1:
+        out['warnings'].append('multiple_modes: other strong resonances are in band; check that the main pair '
+                               '(largest relative dip from fr to fa) is the intended mode')
     return _rounded(out)
 
 

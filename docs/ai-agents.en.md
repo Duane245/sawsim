@@ -25,7 +25,7 @@ sawsim guide --install-claude     # install it as a Claude Code skill (~/.claude
 |---|---|
 | `sawsim templates --json` | templates: dimension, layer count, supported ME modes, default band |
 | `sawsim schema <model_id>` | defaults, allowed ranges and meaning of every field |
-| `sawsim materials` | material library (with reference frames) and the ZXZ Euler convention |
+| `sawsim materials` | material library (with reference frames) and the ZXZ Euler convention; `--show ID` full record, `--create` builds + imports a material from crystal constants, `--import` a complete record |
 | `sawsim validate <cfg>` | check without running; on failure also returns the template's allowed values |
 | `sawsim run <cfg> --json` | one sweep exactly as configured, with metrics |
 | `sawsim locate <cfg>` | coarse sweep → widen the band if fr/fa are outside → 101-point zoom around fr–fa; **use this for fr/fa/k²** |
@@ -38,6 +38,14 @@ sawsim guide --install-claude     # install it as a Claude Code skill (~/.claude
 Exit code 0 = success, 1 = `"ok": false` with `error`/`errors` in the JSON. Progress goes to stderr only.
 
 Runs are cached by config hash in `$SAWSIM_RUNS_DIR` (default `./sawsim_runs`); an identical config returns immediately.
+
+## Generic stacks and custom materials
+
+- **`sp_stack`**: 0–6 backing `layers` under the piezo layer, 0–3 `coatings` over the electrodes, pitch 0.1–20 µm, 0.02–20 GHz.
+  Configured as the five 2D templates, its fr/fa agree with them within 0.1 MHz and with the independent reference within 0.5 MHz (see [Models](models.en.md#mesh-resolution)).
+- **Custom materials**: `sawsim materials --create` takes the independent constants of a crystal class (isotropic / cubic / hexagonal_6mm / trigonal_3m), builds, validates and imports the full tensors;
+  agents must cite the constants in `source`. Only the substrate may be piezoelectric.
+- **Weak coupling**: resonances are detected on |Y|/f (the static-capacitance slope removed) and `locate` densifies until fr–fa is resolved, so materials such as AlN (k² ≈ 0.1 %) are found too.
 
 ## Output fields
 

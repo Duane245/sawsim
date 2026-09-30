@@ -42,8 +42,12 @@ Config can be a file path or inline JSON; `--set key=value` overrides one field.
 admittance.csv), `dofs`, `output_dir`. `q_r`/`q_a` are null: the model is lossless.
 
 Warnings to act on: `peak_at_band_edge` (move/widen band), `antiresonance_not_found`
-(raise stop_ghz), `coarse_sampling` (use locate), `multiple_modes` (check you are
-reading the intended mode - e.g. a Rayleigh spurious next to the SH main mode).
+(raise stop_ghz), `coarse_sampling` (use locate), `no_resonance_found` (weak coupling:
+more points - locate does this), `stronger_response_at_band_edge` (a stronger mode may sit
+just outside the band), `multiple_modes` (check you are reading the intended mode - e.g. a
+Rayleigh spurious next to the SH main mode). The main mode is the strongest resonance
+(largest |Y|/f peak with a deep fr->fa dip), so weakly coupled materials (AlN, k2 ~0.1-1 %)
+are found too; `locate` keeps zooming until fr..fa is resolved.
 
 ## Templates
 
@@ -55,17 +59,28 @@ reading the intended mode - e.g. a Rayleigh spurious next to the SH main mode).
 | sp_quad_layer | electrodes / piezo film / SiO2 / poly-Si / Si (IHP-SAW) | ME1 |
 | sp_tcsaw | SiN / SiO2 overcoat / Cu electrodes / LiNbO3 (TC-SAW) | ME0 only |
 | sp_2p5d_*_layer | same stacks as 3D Hex27 slab, needs aperture_um; minutes per run | ME1 only |
+| **sp_stack** | any: 0-3 `coatings` / electrodes / piezo layer / 0-6 backing `layers` | ME0 or ME1 |
 
-`layers` order: for backed templates, the layers **below** the piezo film, top to bottom; for
-sp_tcsaw, the coatings from the electrode side outwards (SiO2 first, then SiN). The layer
-count is fixed by the template. `substrate_um` is always the thickness of the piezo layer.
+`layers` order: the layers **below** the piezo layer, top to bottom (sp_tcsaw only: its two
+coatings, SiO2 then SiN). Fixed count per template; sp_stack takes 0-6. `coatings` (sp_stack
+only): 0-3 layers above the electrodes, inner to outer. `substrate_um` is always the
+thickness of the piezo layer. Only the substrate may be piezoelectric; layers and coatings
+must be non-piezoelectric (isotropic or anisotropic elastic + dielectric).
+
+**Which template?** Use a named template when the stack matches it (validated against an
+independent reference). Use `sp_stack` for anything else - other layer counts, coatings on
+any stack, custom materials, pitch 0.1-20 um, 0.02-20 GHz. sp_stack reproduces the five 2D
+templates' fr/fa (see docs/ai-agents.md); its PML sits under the lowest layer and uses that
+layer's material. With `linbo3_tc` as substrate it uses the TC-SAW xz convention (ME0 only).
+Its mesh is structured: element size = mesh_um within 2 x pitch of the surface, coarser deeper;
+start at mesh_um ~ pitch/4 and run `converge`.
 
 Geometry conventions: the cell is two electrodes wide (2 x pitch, one + and one - finger);
 electrode width = metal_ratio x pitch. In sp_tcsaw the SiO2 thickness is measured **from the
 piezo surface** (it embeds the electrodes, so SiO2 above the electrode top = SiO2 - electrode_um);
 if a user gives the overcoat thickness above the electrodes, add electrode_um and say so.
-In the 2D templates the bottom PML uses the main piezo material, also under Si backings; in
-2.5D it uses the lowest backing material (see `notes` in `sawsim schema`).
+In the named 2D templates the bottom PML uses the main piezo material, also under Si backings;
+in 2.5D and sp_stack it uses the lowest backing material (see `notes` in `sawsim schema`).
 Independent sweeps may run in parallel; identical configs share one cached result safely.
 
 ## Pitfalls (read before mapping a user's description)
@@ -89,6 +104,26 @@ Independent sweeps may run in parallel; identical configs share one cached resul
 - Ranges are template-limited (e.g. pitch 0.8-1.5 um, metal_ratio 0.3-0.7); if a target
   needs values outside, report it rather than silently clamping.
 - A unit-cell fr/fa is the infinite-periodic resonance; real devices shift slightly.
+
+## Custom materials
+
+If a material is not in `sawsim materials`, create it from literature constants:
+
+```bash
+sawsim materials --symmetries            # accepted crystal classes + an example spec
+sawsim materials --create spec.json      # build full tensors, validate, import (add --dry-run to test)
+sawsim materials --show user_aln         # full record
+```
+
+Spec: `id` (must start with `user_`), `name`, `symmetry` (isotropic: E_gpa, nu, eps_r;
+cubic: C11, C12, C44, eps_r; hexagonal_6mm: C11 C12 C13 C33 C44 e15 e31 e33 eps11 eps33;
+trigonal_3m: + C14, e22), `constants` (stiffness in GPa, e in C/m^2, relative permittivity),
+`rho_kg_m3`, `roles` (`substrate` for piezoelectric; `layer`/`electrode` need e = 0),
+`source` (**cite where every constant comes from**). Tensors are in crystal axes (Z = c axis);
+orient with the ZXZ Euler angles in the config (substrate: euler_*_deg; layers: per-layer
+euler_*_deg). Records are immutable: to change one, create a new id or `version`.
+`--import record.json` takes a complete record (C_pa/e_c_m2/eps_f_m in SI, as `--show` prints).
+Sign conventions differ between sources (e.g. e22, C14); state the source convention you used.
 
 ## Reproducing a reference model
 

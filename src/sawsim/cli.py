@@ -91,8 +91,20 @@ def cmd_schema(args):
     return _call(agent.describe_template, args.model_id)
 
 
+def _json_arg(text):
+    return json.loads(text) if text.lstrip().startswith('{') else json.loads(Path(text).read_text(encoding='utf-8'))
+
+
 def cmd_materials(args):
     from sawsim import agent
+    if args.show:
+        return _call(agent.material_show, args.show)
+    if args.symmetries:
+        return _call(agent.material_symmetries)
+    if args.create:
+        return _call(agent.material_create, _json_arg(args.create), dry_run=args.dry_run)
+    if args.import_file:
+        return _call(agent.material_import, _json_arg(args.import_file), dry_run=args.dry_run)
     return _call(agent.list_materials)
 
 
@@ -171,7 +183,13 @@ def main(argv=None):
     s = sub.add_parser("schema", help="[JSON] defaults, allowed ranges and field meanings of one template")
     s.add_argument("model_id"); s.set_defaults(fn=cmd_schema)
 
-    m = sub.add_parser("materials", help="[JSON] material library + Euler convention")
+    m = sub.add_parser("materials", help="[JSON] material library + Euler convention; show / create / import records")
+    mg = m.add_mutually_exclusive_group()
+    mg.add_argument("--show", metavar="ID", help="full record (tensors) of one material")
+    mg.add_argument("--symmetries", action="store_true", help="crystal classes and constants accepted by --create")
+    mg.add_argument("--create", metavar="SPEC", help="build + import from crystal constants (JSON file or inline)")
+    mg.add_argument("--import", dest="import_file", metavar="RECORD", help="import a complete record (JSON file or inline)")
+    m.add_argument("--dry-run", action="store_true", help="validate --create/--import without saving")
     m.set_defaults(fn=cmd_materials)
 
     v = sub.add_parser("validate", help="[JSON] check a config without running")

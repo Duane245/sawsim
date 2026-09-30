@@ -55,6 +55,17 @@ python -m sawsim.material_library show linbo3_bouchy_2022 --version 1.0.0
 python -m sawsim.material_library import my_material.json
 ```
 
+也可以只给晶系的独立常数，由 `sawsim materials --create` 生成完整张量并导入（支持 isotropic、cubic、hexagonal_6mm、trigonal_3m；`sawsim materials --symmetries` 列出所需常数，`--dry-run` 只校验不保存）：
+
+```bash
+sawsim materials --create '{"id": "user_aln", "name": "AlN", "symmetry": "hexagonal_6mm",
+  "constants": {"C11": 345, "C12": 125, "C13": 120, "C33": 395, "C44": 118,
+                "e15": -0.48, "e31": -0.58, "e33": 1.55, "eps11": 9.21, "eps33": 10.12},
+  "rho_kg_m3": 3260, "roles": ["substrate"], "source": "<文献出处>"}'
+```
+
+刚度单位 GPa，e 单位 C/m²，介电为相对值；张量在晶轴坐标系（Z 为对称轴），取向用配置里的 ZXZ 欧拉角。trigonal_3m 采用 +C14、+e22 约定，与 `linbo3_bouchy_2022` 一致（`tests/test_stack_materials.py` 逐项核对）。只有衬底可以是压电材料。
+
 记录保存到 `~/.sawsim/materials/`（环境变量 `SAWSIM_MATERIALS_DIR` 可改）。同 id 同版本不能覆盖，修改请升版本。在 `Model` 中通过 `substrate_material="user_xxx"` 或 `layers=[{"material_id": "user_xxx", ...}]` 引用。
 
 每个任务把所用材料的完整记录写入 `input.json` 的 `material_snapshots`，并在 `material_snapshot.json` 记录 SHA-256 哈希。重算历史任务时用快照，不依赖库中文件是否仍存在。

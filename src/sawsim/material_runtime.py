@@ -10,9 +10,9 @@ def from_record(record):
 
 
 def resolve_materials(config):
-    ids=[config.substrate_material,config.electrode_material]+[x.material_id for x in config.layers]
+    ids=[config.substrate_material,config.electrode_material]+[x.material_id for x in config.layers+config.coatings]
     angles=[[config.euler_phi_deg,config.euler_theta_deg,config.euler_psi_deg],[0.,0.,0.]]
-    angles += [[x.euler_phi_deg,x.euler_theta_deg,x.euler_psi_deg] for x in config.layers]
+    angles += [[x.euler_phi_deg,x.euler_theta_deg,x.euler_psi_deg] for x in config.layers+config.coatings]
     records=[config.material_snapshots[mid] for mid in ids]
     raw=[from_record(record) for record in records]
     active=[]
@@ -34,11 +34,11 @@ def resolve_materials(config):
 
 
 def snapshot_manifest(config):
-    ids=[config.substrate_material,config.electrode_material]+[x.material_id for x in config.layers]
+    ids=[config.substrate_material,config.electrode_material]+[x.material_id for x in config.layers+config.coatings]
     angles=[[config.euler_phi_deg,config.euler_theta_deg,config.euler_psi_deg],[0.,0.,0.]]
-    angles += [[x.euler_phi_deg,x.euler_theta_deg,x.euler_psi_deg] for x in config.layers]
+    angles += [[x.euler_phi_deg,x.euler_theta_deg,x.euler_psi_deg] for x in config.layers+config.coatings]
     return dict(schema_version='1.0',euler_convention='zxz',datasets=config.material_snapshots,
         hashes={k:record_hash(v) for k,v in config.material_snapshots.items()},
         assignments=[dict(region=label,material_id=mid,euler_angles_deg=a,rotation_matrix=rotation_matrix(a).tolist())
-                     for label,mid,a in zip(['substrate','electrode']+['layer_%d'%i for i in range(len(config.layers))],ids,angles)],
+                     for label,mid,a in zip(['substrate','electrode']+['layer_%d'%i for i in range(len(config.layers))]+['coating_%d'%i for i in range(len(config.coatings))],ids,angles)],
         pml_note='PML inherits its assigned region material and rotation; see metadata.geometry.pml_material_id')

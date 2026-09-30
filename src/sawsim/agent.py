@@ -25,8 +25,11 @@ FIELD_DOCS = {
                       'sp_tcsaw supports only 0; 2.5D templates only 1',
     'substrate_material': 'piezoelectric substrate material id (see `sawsim materials`)',
     'electrode_material': 'electrode material id',
-    'layers': 'extra layers [{material_id, thickness_um, euler_*_deg}]; count fixed by template. '
-              'Order: backing layers top->bottom under the substrate, or coatings inner->outer for sp_tcsaw',
+    'layers': 'extra layers [{material_id, thickness_um, euler_*_deg}]; count fixed by the template '
+              '(sp_stack: 0-6). Order: backing layers top->bottom under the piezo layer '
+              '(sp_tcsaw only: its two coatings, inner->outer). Layer materials must be non-piezoelectric',
+    'coatings': 'sp_stack only: 0-3 layers over the electrodes, inner->outer; the first is measured from the '
+                'piezo surface and embeds the electrodes (must be thicker than electrode_um)',
     'euler_phi_deg': 'intrinsic ZXZ Euler alpha applied to the substrate tensor, deg',
     'euler_theta_deg': 'intrinsic ZXZ Euler beta, deg',
     'euler_psi_deg': 'intrinsic ZXZ Euler gamma, deg',
@@ -65,13 +68,19 @@ def config_hash(cfg) -> str:
 
 # ---------------------------------------------------------------- discovery
 
+def _count(spec):
+    """Layer count of a template: an int, or [min, max] for sp_stack."""
+    return spec.get('layer_count_range') or spec['layer_count']
+
+
 def list_templates() -> dict:
     from sawsim.sp_specs import MODEL_SPECS
     rows = []
     for k, s in MODEL_SPECS.items():
         d = s['defaults']
         rows.append(dict(model_id=k, name=s['name'], dimension='2.5D Hex27' if k.startswith('sp_2p5d_') else '2D Q9',
-                         layer_count=s['layer_count'], mode_extensions=s['supported_mode_extensions'],
+                         layer_count=_count(s), coating_count=s.get('coating_count_range', [0, 0]),
+                         mode_extensions=s['supported_mode_extensions'],
                          default_substrate=d['substrate_material'], default_band_ghz=[d['start_ghz'], d['stop_ghz']]))
     return dict(templates=rows)
 
@@ -83,7 +92,8 @@ def describe_template(model_id: str) -> dict:
     s = MODEL_SPECS[model_id]
     ranges = {f['key']: dict(min=f['min'], max=f['max'], step=f['step']) for f in s['numeric_fields']}
     return dict(ok=True, model_id=model_id, name=s['name'], defaults=deepcopy(s['defaults']),
-                ranges=ranges, layer_count=s['layer_count'], layer_role=s['layer_role'],
+                ranges=ranges, layer_count=_count(s), coating_count=s.get('coating_count_range', [0, 0]),
+                layer_role=s['layer_role'],
                 layer_thickness_um=[s['layer_thickness_min_um'], s['layer_thickness_max_um']],
                 mode_extensions=s['supported_mode_extensions'], notes=s['notes'], fields=FIELD_DOCS)
 
@@ -105,6 +115,62 @@ def list_materials() -> dict:
                                                       formula=EULER_CONVENTION['formula']))
 
 
+def material_show(material_id: str) -> dict:
+    from sawsim.material_library import get_record
+    try:
+        return dict(ok=True, record=get_record(material_id))
+    except (KeyError, ValueError) as e:
+        return dict(ok=False, error=str(e).strip("'"))
+
+
+def material_symmetries() -> dict:
+    from sawsim.crystal import SYMMETRIES
+    return dict(ok=True, symmetries=SYMMETRIES,
+                spec_example=dict(id='user_aln', name='AlN (literature)', symmetry='hexagonal_6mm',
+                                  constants=dict(C11=345, C12=125, C13=120, C33=395, C44=118,
+                                                 e15=-0.48, e31=-0.58, e33=1.55, eps11=9.21, eps33=10.12),
+                                  rho_kg_m3=3260, roles=['substrate', 'layer'],
+                                  source='<paper / database citation for every constant>'),
+                note='ids must start with user_; records are immutable (bump version to change); '
+                     'stored in $SAWSIM_MATERIALS_DIR (default ~/.sawsim/materials)')
+
+
+def _import(record, dry_run):
+    from pydantic import ValidationError
+    from sawsim.material_library import import_record
+    from sawsim.material_library.schema import MaterialRecord
+    try:
+        rec = MaterialRecord.model_validate(record).model_dump()
+        if not dry_run:
+            rec = import_record(rec)
+    except ValidationError as e:
+        return dict(ok=False, errors=[dict(field='.'.join(str(x) for x in err.get('loc', ())) or None,
+                                           message=err.get('msg')) for err in e.errors()])
+    except (ValueError, OSError) as e:  # FileExistsError is an OSError
+        return dict(ok=False, error='%s: %s' % (type(e).__name__, e))
+    return dict(ok=True, imported=not dry_run, id=rec['id'], version=rec['version'], roles=rec['roles'],
+                symmetry=rec['symmetry'], rho_kg_m3=rec['rho_kg_m3'],
+                usage='use "%s" as substrate_material / electrode_material / layer material_id (per roles)' % rec['id'])
+
+
+def material_create(spec, *, dry_run: bool = False) -> dict:
+    """Build a record from crystal-class constants (see material_symmetries) and import it."""
+    from sawsim.crystal import build_record
+    s = _load(spec)
+    try:
+        record = build_record(**s)
+    except TypeError as e:
+        return dict(ok=False, error='bad spec keys: %s' % e)
+    except (ValueError, KeyError) as e:
+        return dict(ok=False, error=str(e))
+    return _import(record, dry_run)
+
+
+def material_import(record, *, dry_run: bool = False) -> dict:
+    """Import a complete record (C_pa/e_c_m2/eps_f_m in SI, same format as `material_show`)."""
+    return _import(_load(record), dry_run)
+
+
 def _invalid(config, errors):
     """Validation failure plus the template's allowed values, so an agent can fix everything in one pass."""
     out = dict(ok=False, errors=errors)
@@ -115,6 +181,7 @@ def _invalid(config, errors):
     t = describe_template(mid) if isinstance(mid, str) else dict(ok=False)
     if t.get('ok'):
         out['allowed'] = dict(mode_extensions=t['mode_extensions'], layer_count=t['layer_count'],
+                              coating_count=t['coating_count'],
                               layer_thickness_um=t['layer_thickness_um'], ranges=t['ranges'],
                               aperture_um='required' if mid.startswith('sp_2p5d_') else 'must be null')
     else:
@@ -156,6 +223,8 @@ def summarize(result_dir) -> dict:
                                       'pitch_um', 'metal_ratio', 'electrode_um', 'substrate_um', 'mesh_um',
                                       'start_ghz', 'stop_ghz', 'points', 'aperture_um')}
     config['layers'] = [(l['material_id'], l['thickness_um']) for l in inp.get('layers', [])]
+    if inp.get('coatings'):
+        config['coatings'] = [(l['material_id'], l['thickness_um']) for l in inp['coatings']]
     return dict(ok=True, output_dir=str(d), config=config, **res,
                 admittance_unit=units.get('admittance', 'S/m'),
                 max_abs_y=float(np.max(np.abs(y))), dofs=meta.get('dofs'), elements=meta.get('elements'),
@@ -245,10 +314,16 @@ def _with(config, **changes):
 
 def locate(config, *, zoom_points: int = 101, on_progress=None) -> dict:
     """Coarse sweep -> find fr/fa (widening the band if needed) -> zoomed sweep around them."""
+    from sawsim.sp_specs import MODEL_SPECS
     c = _load(config)
+    spec = MODEL_SPECS.get(c.get('model_id', 'sp_single_layer'))
+    if spec is None:
+        return validate(c)
+    lim = {fl['key']: (fl['min'], fl['max']) for fl in spec['numeric_fields']}
+    f_lo, f_hi = lim['start_ghz'][0], lim['stop_ghz'][1]
     history = []
     s = None
-    for _ in range(4):
+    for _ in range(6):
         s = run(c, on_progress=on_progress)
         if not s.get('ok'):
             return s
@@ -257,25 +332,47 @@ def locate(config, *, zoom_points: int = 101, on_progress=None) -> dict:
                             output_dir=s['output_dir']))
         w = ' '.join(s['warnings'])
         span = stop - start
-        if 'peak_at_band_edge' in w:
-            mag = json.loads((Path(s['output_dir']) / 'curve.json').read_text(encoding='utf-8'))['magnitude']
-            at_low = int(np.argmax(mag)) == 0
-            c = _with(c, start_ghz=round(max(0.5, start - span / 2), 4) if at_low else start,
-                      stop_ghz=round(min(5.0, stop + span / 2), 4) if not at_low else stop)
+        at_limits = start <= f_lo and stop >= f_hi
+        if 'no_resonance_found' in w or ('peak_at_band_edge' in w and at_limits):
+            points = s['config']['points']
+            if points >= 401:
+                break
+            c = _with(c, points=min(401, 2 * points + 1))  # weak coupling: sample the fr..fa gap
             continue
-        if 'antiresonance_not_found' in w:
-            c = _with(c, stop_ghz=round(min(5.0, stop + span / 2), 4))
+        if 'peak_at_band_edge' in w:
+            curve = json.loads((Path(s['output_dir']) / 'curve.json').read_text(encoding='utf-8'))
+            g = np.asarray(curve['magnitude']) / np.asarray(curve['frequency_ghz'])
+            at_low = int(np.argmax(g)) == 0
+            c = _with(c, start_ghz=round(max(f_lo, start - span / 2), 4) if at_low else start,
+                      stop_ghz=round(min(f_hi, stop + span / 2), 4) if not at_low else stop)
+            continue
+        if 'antiresonance_not_found' in w and stop < f_hi:
+            c = _with(c, stop_ghz=round(min(f_hi, stop + span / 2), 4))
             continue
         break
     if s.get('fr_ghz') is None or s.get('fa_ghz') is None:
-        return dict(ok=False, error='could not bracket fr and fa within 0.5..5 GHz', history=history, last=s)
-    fr, fa = s['fr_ghz'], s['fa_ghz']
-    gap = fa - fr
-    zoom = _with(c, start_ghz=round(fr - gap, 6), stop_ghz=round(fa + gap, 6), points=int(zoom_points))
-    z = run(zoom, on_progress=on_progress)
-    if z.get('ok'):
-        z['coarse'] = dict(output_dir=s['output_dir'], fr_ghz=fr, fa_ghz=fa)
-        z['history'] = history
+        return dict(ok=False, error='could not bracket fr and fa within the template band %s..%s GHz' % (f_lo, f_hi),
+                    history=history, last=s)
+    coarse = dict(output_dir=s['output_dir'], fr_ghz=s['fr_ghz'], fa_ghz=s['fa_ghz'])
+    z = s
+    for _ in range(3):  # zoom; repeat if the fr..fa gap is still under-sampled
+        fr, fa = z['fr_ghz'], z['fa_ghz']
+        half = max(fa - fr, 2e-3 * z['frequency_step_mhz'])
+        zoom = _with(c, start_ghz=round(max(f_lo, fr - half), 6), stop_ghz=round(min(f_hi, fa + half), 6),
+                     points=int(zoom_points))
+        nz = run(zoom, on_progress=on_progress)
+        if not nz.get('ok') or nz.get('fr_ghz') is None or nz.get('fa_ghz') is None:
+            break
+        z = nz
+        history.append(dict(band_ghz=[zoom['start_ghz'], zoom['stop_ghz']], fr_ghz=z['fr_ghz'],
+                            fa_ghz=z['fa_ghz'], output_dir=z['output_dir']))
+        if not any(x.startswith('coarse_sampling') for x in z['warnings']):
+            break
+    if z is s:
+        return dict(ok=False, error='zoomed sweep lost the resonance; inspect the coarse result', coarse=coarse,
+                    history=history, last=nz)
+    z['coarse'] = coarse
+    z['history'] = history
     return z
 
 

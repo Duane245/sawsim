@@ -24,7 +24,7 @@ sawsim guide --install-claude     # 安装为 Claude Code skill（~/.claude/skil
 |---|---|
 | `sawsim templates --json` | 模板列表：维度、层数、支持的 ME 模式、默认频带 |
 | `sawsim schema <model_id>` | 某模板的默认值、取值范围、每个字段的含义 |
-| `sawsim materials` | 材料库（含参考坐标系说明）与 ZXZ 欧拉角约定 |
+| `sawsim materials` | 材料库（含参考坐标系说明）与 ZXZ 欧拉角约定；`--show ID` 完整记录，`--create` 由晶系常数生成并导入新材料，`--import` 导入完整记录 |
 | `sawsim validate <cfg>` | 只校验不计算；失败时同时返回该模板允许的取值 |
 | `sawsim run <cfg> --json` | 按配置算一次扫频并返回指标 |
 | `sawsim locate <cfg>` | 粗扫 → 频带不含 fr/fa 时自动扩展 → 在 fr–fa 附近 101 点细扫；**求 fr/fa/k² 用它** |
@@ -37,6 +37,14 @@ sawsim guide --install-claude     # 安装为 Claude Code skill（~/.claude/skil
 退出码 0 表示成功，1 表示 JSON 里 `"ok": false` 并附 `error`/`errors`。进度信息只写 stderr。
 
 结果按配置哈希缓存在 `$SAWSIM_RUNS_DIR`（默认 `./sawsim_runs`），重复提交相同配置直接返回，不重算。
+
+## 通用叠层与自定义材料
+
+- **`sp_stack`**：压电层下 0–6 层背衬（`layers`），电极上 0–3 层覆盖（`coatings`），节距 0.1–20 µm、频率 0.02–20 GHz。
+  与五个二维模板配出相同叠层时，fr/fa 与原模板相差 ≤ 0.1 MHz，与独立参考解相差 ≤ 0.5 MHz（见 [模型库](models.md#网格分辨率)）。
+- **自定义材料**：`sawsim materials --create` 接受晶系独立常数（isotropic / cubic / hexagonal_6mm / trigonal_3m），生成完整张量、校验后导入；
+  代理必须在 `source` 中写明常数出处。只有衬底可以是压电材料。
+- **弱耦合**：谐振识别基于 |Y|/f（去掉静电容的线性背景），`locate` 会在 fr–fa 未分辨时自动加密，AlN 这类 k² ≈ 0.1 % 的材料也能定位。
 
 ## 输出字段
 

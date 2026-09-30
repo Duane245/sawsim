@@ -144,8 +144,9 @@ def build_mesh(pitch=.9968, electrode=.16633, substrate=15.9488, metal_ratio=.46
     # gmsh.model.geo.mesh.setTransfiniteCurve(8, 17,"Progression", 1.2)
 
     NN = max(2, math.ceil((w / 4 - w / 4 * MR)/lc))
-    NN1 = max(2, math.ceil(p*MR/lc))
-    NN2 = max(2, math.ceil(p*(1-MR)/lc))
+    # >= 2 elements per electrode and per inner gap: at least 8 elements per wavelength (2 p) across.
+    NN1 = max(3, math.ceil(p*MR/lc))
+    NN2 = max(3, math.ceil(p*(1-MR)/lc))
 
     NN3 = NN + (NN1-1) + (NN2-1) + (NN1-1) + (NN-1)        #3 + (5-1) + (5-1) + (5-1) + (3-1)
 

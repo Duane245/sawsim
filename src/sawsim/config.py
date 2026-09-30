@@ -20,6 +20,7 @@ class SimulationConfig(BaseModel):
     substrate_material: str = 'sp_baseline'
     electrode_material: str = 'al'
     layers: List[LayerConfig] = Field(default_factory=list)
+    coatings: List[LayerConfig] = Field(default_factory=list)
     material_snapshots: Dict[str, dict] = Field(default_factory=dict, max_length=12)
     # phi/theta/psi are intrinsic ZXZ alpha/beta/gamma, in degrees. Convention id 'zxz'; legacy ids accepted as aliases.
     euler_convention: Literal['zxz'] = 'zxz'
@@ -66,7 +67,7 @@ class SimulationConfig(BaseModel):
         from sawsim.material_library import get_record
         from sawsim.material_library.schema import MaterialRecord
         references=[(self.substrate_material,'substrate'),(self.electrode_material,'electrode')]
-        references += [(layer.material_id,'layer') for layer in self.layers]
+        references += [(layer.material_id,'layer') for layer in self.layers+self.coatings]
         used={mid for mid,role in references}
         if set(self.material_snapshots)-used:
             raise ValueError('材料快照包含未使用的材料 ID')
@@ -88,9 +89,20 @@ class SimulationConfig(BaseModel):
             raise ValueError('aperture_um 仅适用于 2.5D Hex27 薄片模型')
         if self.mode_extension not in spec['supported_mode_extensions']:
             raise ValueError('该模型不支持所选 ME 模式')
-        if len(self.layers)!=spec['layer_count']:
+        if spec.get('layer_count_range'):
+            lo,hi=spec['layer_count_range']
+            if not lo<=len(self.layers)<=hi:
+                raise ValueError('该模型的背衬层数须在 %d–%d 之间' % (lo,hi))
+        elif len(self.layers)!=spec['layer_count']:
             raise ValueError('该模型需要 %d 个附加层' % spec['layer_count'])
-        for layer in self.layers:
+        clo,chi=spec.get('coating_count_range',[0,0])
+        if not clo<=len(self.coatings)<=chi:
+            raise ValueError('该模型不支持覆盖层（coatings）' if chi==0 else '覆盖层数须在 %d–%d 之间' % (clo,chi))
+        if self.model_id=='sp_stack' and self.substrate_material=='linbo3_tc' and self.mode_extension!=0:
+            raise ValueError('linbo3_tc（TC-SAW xz 平面数据）只支持 mode_extension=0')
+        if self.coatings and self.coatings[0].thickness_um<=self.electrode_um:
+            raise ValueError('第一层覆盖层从压电表面起算并包埋电极，厚度必须大于电极厚度')
+        for layer in self.layers+self.coatings:
             lower=spec.get('layer_thickness_min_um',0.01)
             upper=spec.get('layer_thickness_max_um',20.0)
             if not lower<=layer.thickness_um<=upper:

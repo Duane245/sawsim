@@ -10,7 +10,7 @@ def test_version():
 
 def test_templates_listed():
     t = Model.templates()
-    assert len(t) == 9 and 'sp_single_layer' in t and 'sp_2p5d_quad_layer' in t
+    assert len(t) == 10 and 'sp_stack' in t and 'sp_single_layer' in t and 'sp_2p5d_quad_layer' in t
 
 
 def test_model_defaults_and_repr():

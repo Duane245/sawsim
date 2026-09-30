@@ -63,6 +63,21 @@ for _suffix,_name,_piezo,_layers in [
     _spec['numeric_fields'].append(dict(key='aperture_um',label='周期薄片宽度 (µm)',min=.05,max=.5,step=.001))
     _spec['notes']='3D Hex27 薄片，左右与前后均为零相位周期约束；准确称 2.5D，不是任意三维器件。PML 使用最下方背衬材料；无背衬时使用主压电材料。'
 
+# Generic 2D stack: 0-6 backing layers under the piezo layer, 0-3 coatings over the electrodes.
+_add('sp_stack','SP 通用叠层（Q9，0–6 背衬层 + 0–3 覆盖层）',8,[])
+_stack=MODEL_SPECS['sp_stack']
+_stack.update(layer_count=None,layer_count_range=[0,6],coating_count_range=[0,3],
+              layer_thickness_min_um=.005,layer_thickness_max_um=100.,
+              numeric_fields=[dict(key=k,label=label,min=lo,max=hi,step=step) for k,label,lo,hi,step in [
+                  ('pitch_um','节距 (µm)',.1,20,.0001),('electrode_um','电极厚度 (µm)',.005,2,.0001),
+                  ('substrate_um','主压电层厚度 (µm)',.05,100,.001),('metal_ratio','金属化比',.15,.85,.01),
+                  ('mesh_um','网格尺寸 (µm)',.01,1,.001),('start_ghz','起始频率 (GHz)',.02,20,.001),
+                  ('stop_ghz','结束频率 (GHz)',.02,20,.001),('points','频点数',3,1201,1),('voltage','激励电压 (V)',.01,10,.01)]],
+              notes='通用二维叠层：layers 为压电层下方的背衬层（自上而下，0–6 层），coatings 为电极上方的覆盖层（由内向外，0–3 层，'
+                    '第一层从压电表面起算并包埋电极，须厚于电极）。结构化 Q9 网格：表面以下 2 倍节距内单元尺寸 = mesh_um，更深处放宽。'
+                    '底部 PML 厚 2 倍节距，材料取最下层背衬（无背衬时取压电材料）。仅衬底可为压电材料。'
+                    '衬底为 linbo3_tc 时沿用 TC-SAW 数据集的 xz 平面映射。')
+
 for _id,_spec in MODEL_SPECS.items():
     if _id.startswith('sp_2p5d_'):
         _spec['notes'] += ' 源兼容 Hex27 内核保留历史 γyz 项缺失，尚非通用三维精度认证。'

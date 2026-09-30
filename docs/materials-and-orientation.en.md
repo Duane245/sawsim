@@ -55,6 +55,17 @@ Copy the JSON of a built-in record, change `id` (must start with `user_`), `vers
 python -m sawsim.material_library import my_material.json
 ```
 
+Alternatively give only the independent constants of the crystal class and let `sawsim materials --create` build and import the full tensors (isotropic, cubic, hexagonal_6mm, trigonal_3m; `sawsim materials --symmetries` lists the required constants, `--dry-run` validates without saving):
+
+```bash
+sawsim materials --create '{"id": "user_aln", "name": "AlN", "symmetry": "hexagonal_6mm",
+  "constants": {"C11": 345, "C12": 125, "C13": 120, "C33": 395, "C44": 118,
+                "e15": -0.48, "e31": -0.58, "e33": 1.55, "eps11": 9.21, "eps33": 10.12},
+  "rho_kg_m3": 3260, "roles": ["substrate"], "source": "<literature source>"}'
+```
+
+Stiffness in GPa, e in C/m², relative permittivities; tensors are in crystal axes (Z = symmetry axis) and are oriented with the ZXZ Euler angles of the config. trigonal_3m uses the +C14, +e22 convention of `linbo3_bouchy_2022` (checked term by term in `tests/test_stack_materials.py`). Only the substrate may be piezoelectric.
+
 Records are stored in `~/.sawsim/materials/` (override with `SAWSIM_MATERIALS_DIR`). The same id and version cannot be overwritten; bump the version instead. Reference them with `substrate_material="user_xxx"` or `layers=[{"material_id": "user_xxx", ...}]` in `Model`.
 
 Every run writes the complete records it used into `material_snapshots` in `input.json` and their SHA-256 hashes into `material_snapshot.json`. Re-running a saved job uses the snapshot and does not depend on the library file still existing.

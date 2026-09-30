@@ -60,8 +60,9 @@ def build_sp_family(config):
     angles=[config.euler_phi_deg,config.euler_theta_deg,config.euler_psi_deg]
     from sawsim.material_runtime import resolve_materials
     chosen,source,library_tensors,provenance=resolve_materials(config)
-    ids=[config.substrate_material,config.electrode_material]+[layer.material_id for layer in config.layers]
-    is_tc=config.model_id=='sp_tcsaw'
+    ids=[config.substrate_material,config.electrode_material]+[layer.material_id for layer in config.layers+config.coatings]
+    # TC-SAW dataset tensors live in the xz plane of their reference frame (also when used in sp_stack).
+    is_tc=config.model_id=='sp_tcsaw' or (config.model_id=='sp_stack' and config.substrate_material=='linbo3_tc')
     project=materials.project_xz_plane_strain if is_tc else materials.project_xy_plane_strain
     active=chosen if config.mode_extension else [project(m) for m in chosen]
     strain=[0,2,4] if is_tc else [0,1,5]
@@ -88,13 +89,15 @@ def build_sp_family(config):
     tensor_data.update(library_tensors)
     details=dict(material_library=provenance,period_m=info['period_m'],pml_thickness_m=info['pml_thickness_m'],pml_bottom_m=bottom,
         pml_interface_m=bottom+info['pml_thickness_m'],pml_tag=info['pml_tag'],
-        pml_material_id=config.substrate_material,pml_material_assignment='source compatibility: primary piezo material, including under backing layers',
+        pml_material_id=ids[info['tag_map'][info['pml_tag']]],
+        pml_material_assignment=('lowest backing layer' if info.get('pml_material_role')=='last_backing' else
+                                 'source compatibility: primary piezo material, including under backing layers'),
         periodic_node_pairs=len(left),material_regions=region_names,material_region_ids=region_ids,
         substrate_material=entries[config.substrate_material],electrode_material=entries[config.electrode_material],
         euler_convention=catalog['euler_convention'],euler_angles_deg=angles,bloch_phase_rad=0.0,
         substrate_depth_m=config.substrate_um*1e-6,electrode_thickness_m=config.electrode_um*1e-6,
         electrode_width_m=config.pitch_um*config.metal_ratio*1e-6,layers=[layer.model_dump() for layer in config.layers],
-        layer_role=spec['layer_role'],layer_tags=info['layer_tags'],coordinate_note=info.get('coordinate_note',''),
+        coatings=[layer.model_dump() for layer in config.coatings],layer_role=spec['layer_role'],layer_tags=info['layer_tags'],coordinate_note=info.get('coordinate_note',''),
         tensor_plane='xz mapped to local mesh xy' if is_tc else 'xy',
         source_component_labels=['ux','uz'] if is_tc else ['ux','uy','uz'][:ndisp],
         mesh_info=info)
@@ -123,13 +126,17 @@ def build_sp_tcsaw(config):
     return build_sp_family(config)
 
 
+def build_sp_stack(config):
+    return build_sp_family(config)
+
+
 def build_hex_model(config):
     from sawsim.hex_models import build_hex_model as build
     return build(config)
 
 
 _BUILDERS={'sp_single_layer':build_sp_single_layer,'sp_double_layer':build_sp_double_layer,
-           'sp_triple_layer':build_sp_triple_layer,'sp_quad_layer':build_sp_quad_layer,'sp_tcsaw':build_sp_tcsaw}
+           'sp_triple_layer':build_sp_triple_layer,'sp_quad_layer':build_sp_quad_layer,'sp_tcsaw':build_sp_tcsaw,'sp_stack':build_sp_stack}
 MODEL_REGISTRY={key:ModelDefinition(key,spec['name'],3 if key.startswith('sp_2p5d_') else 2,
                 2+spec['defaults'].get('mode_extension',1),build_hex_model if key.startswith('sp_2p5d_') else _BUILDERS[key])
                 for key,spec in MODEL_SPECS.items()}

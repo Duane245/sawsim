@@ -28,6 +28,16 @@ def test_resonances_synthetic_subgrid():
     assert not r['warnings']
 
 
+def test_resonances_weak_coupling_on_capacitive_background():
+    """k2 ~ 0.4 %: |Y| keeps rising with f (2 pi f C0), the resonance is a small wiggle."""
+    f = np.linspace(2.0e9, 3.0e9, 401)
+    fr, fa = 2.47310e9, 2.47685e9
+    y = 2j * np.pi * f * 1e-12 * (fa ** 2 - f ** 2) / (fr ** 2 - f ** 2)
+    r = resonances(f, y)
+    assert abs(r['fr_ghz'] - fr * 1e-9) < 2.5e-3 and abs(r['fa_ghz'] - fa * 1e-9) < 2.5e-3
+    assert not any(w.startswith('peak_at_band_edge') for w in r['warnings'])
+
+
 def test_resonances_band_edge_warning():
     f, y = _lorentz_curve(1.55e9, 1.62e9)
     r = resonances(f, y)
@@ -52,7 +62,7 @@ def test_reference_fr_fa_agree(model):
 
 def test_templates_and_schema():
     t = agent.list_templates()['templates']
-    assert len(t) == 9
+    assert len(t) == 10 and any(r['model_id'] == 'sp_stack' for r in t)
     s = agent.describe_template('sp_tcsaw')
     assert s['ok'] and s['mode_extensions'] == [0] and 'pitch_um' in s['ranges'] and 'pitch_um' in s['fields']
     assert not agent.describe_template('nope')['ok']
@@ -102,7 +112,7 @@ def _cli(*args):
 
 def test_cli_json_stdout_is_pure(tmp_path):
     rc, out = _cli('templates', '--json')
-    assert rc == 0 and len(out['templates']) == 9
+    assert rc == 0 and len(out['templates']) == 10
     rc, out = _cli('validate', '{"model_id": "sp_tcsaw", "mode_extension": 1}')
     assert rc == 1 and out['ok'] is False
     rc, out = _cli('run', '{"model_id": "sp_single_layer"}', '--set', 'points=5', '--mesh-only', '--json', '-q',
