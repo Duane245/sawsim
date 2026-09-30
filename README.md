@@ -37,7 +37,7 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
-**AI 代理**（Claude Code、codex 等）：每条命令都可输出 JSON，直接给出 fr、fa、k²eff 与警告。先装一次使用说明，之后直接用自然语言提问即可。
+**AI 代理**（Claude Code、codex 等）：每条命令都可输出 JSON，直接给出 fr、fa、k²eff 与警告。在**运行 AI 代理的那台机器**上、装有 sawsim 的同一 Python 环境里执行一次安装命令，然后新开一个会话，直接用自然语言提问即可（例如“用 sawsim 算一下 TC-SAW 的 fr 和 k²”）。
 
 ```bash
 sawsim guide --install-claude                 # Claude Code：安装为 skill（~/.claude/skills/sawsim）

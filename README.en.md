@@ -37,7 +37,7 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
-**AI agents** (Claude Code, codex, …): every command can print JSON with fr, fa, k²eff and warnings. Install the guide once, then ask in plain language.
+**AI agents** (Claude Code, codex, …): every command can print JSON with fr, fa, k²eff and warnings. Run the install command once **on the machine where the agent runs**, in the Python environment that has sawsim, then start a new session and ask in plain language (e.g. "use sawsim to get fr and k² of the TC-SAW cell").
 
 ```bash
 sawsim guide --install-claude                 # Claude Code: install as a skill (~/.claude/skills/sawsim)
