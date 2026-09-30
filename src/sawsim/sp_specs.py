@@ -66,7 +66,7 @@ for _suffix,_name,_piezo,_layers in [
 # Generic 2D stack: 0-6 backing layers under the piezo layer, 0-3 coatings over the electrodes.
 _add('sp_stack','SP 通用叠层（Q9，0–6 背衬层 + 0–3 覆盖层）',8,[])
 _stack=MODEL_SPECS['sp_stack']
-_stack.update(layer_count=None,layer_count_range=[0,6],coating_count_range=[0,3],
+_stack.update(layer_count=None,layer_count_range=[0,6],coating_count_range=[0,3],web_hidden=True,
               layer_thickness_min_um=.005,layer_thickness_max_um=100.,
               numeric_fields=[dict(key=k,label=label,min=lo,max=hi,step=step) for k,label,lo,hi,step in [
                   ('pitch_um','节距 (µm)',.1,20,.0001),('electrode_um','电极厚度 (µm)',.005,2,.0001),
