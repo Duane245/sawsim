@@ -37,10 +37,12 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
-**AI 代理**（Claude Code、codex 等）：每条命令都可输出 JSON，直接给出 fr、fa、k²eff 与警告。
+**AI 代理**（Claude Code、codex 等）：每条命令都可输出 JSON，直接给出 fr、fa、k²eff 与警告。先装一次使用说明，之后直接用自然语言提问即可。
 
 ```bash
-sawsim guide --install-claude                 # 安装 Claude Code skill；其他代理先运行 sawsim guide
+sawsim guide --install-claude                 # Claude Code：安装为 skill（~/.claude/skills/sawsim）
+sawsim guide --install-codex                  # codex：写入全局指令 ~/.codex/AGENTS.md
+sawsim guide                                  # 其他代理：打印完整说明
 sawsim locate '{"model_id": "sp_tcsaw"}'      # 自动定位谐振/反谐振并细扫
 sawsim converge '{"model_id": "sp_tcsaw"}'    # 网格加密检查
 ```
@@ -61,17 +63,17 @@ sawsim converge '{"model_id": "sp_tcsaw"}'    # 网格加密检查
 
 ## 验证
 
-每个模板与独立的参考有限元解逐点比对；主谐振与反谐振频率全部一致，主谐振区误差 0.1 – 2 %，2D 多层模板在 2.4 GHz 以上高阶模态区存在偏差。完整误差表、图和说明见 [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md)。`pytest` 在 5 – 6 个频点上复现该比对。
+每个模板与独立的参考有限元解逐点比对：九个模板的谐振频率 fr 与反谐振频率 fa 与参考解相差均在 0.5 MHz 以内（多数小于 0.1 MHz），主谐振区幅值误差 0.1 – 2 %，2D 多层模板在 2.4 GHz 以上高阶模态区存在偏差。完整误差表、图和说明见 [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md)。`pytest` 在 5 – 6 个频点上复现该比对。
 
 <div align="center">
 <img src="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/compare_2p5d_double.png" width="640"><br>
-<sub>2.5D SP 双层（LiNbO₃ 0.6 µm / Si 6.51 µm），251 频点。虚线 sawsim，实线参考解，幅值相对 L2 误差 0.15 %。</sub>
+<sub>2.5D SP 双层（LiTaO₃ 0.6 µm / Si 6.51 µm），251 频点。虚线 sawsim，实线参考解，幅值相对 L2 误差 0.15 %。</sub>
 </div>
 
 ## 文档
 
 - [快速开始](https://github.com/Duane245/sawsim/blob/main/docs/getting-started.md) — 安装、第一个算例、输出文件、单位
-- [模型库](https://github.com/Duane245/sawsim/blob/main/docs/models.md) — 九种模板、参数、位移模型、边界与已知限制
+- [模型库](https://github.com/Duane245/sawsim/blob/main/docs/models.md) — 十种模板（含通用叠层）、参数、位移模型、边界、网格分辨率与已知限制
 - [材料库与晶体取向](https://github.com/Duane245/sawsim/blob/main/docs/materials-and-orientation.md) — 内置材料、记录格式、自定义导入、ZXZ 欧拉角
 - [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md) — 与参考解的逐点比对及解读
 - [用 AI 代理驱动 SawSim](https://github.com/Duane245/sawsim/blob/main/docs/ai-agents.md) — JSON 命令、输出字段、fr/fa 精度、代理验收结果
@@ -84,7 +86,6 @@ examples/          AI 代理验收任务
 tests/             回归与 API 测试，tests/data 为参考曲线
 docs/              文档与图
 matlab/            v0.x 的 MATLAB + Gmsh 实现（历史版本，MIT）
-tools/             维护脚本
 ```
 
 ## 许可

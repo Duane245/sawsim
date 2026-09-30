@@ -37,10 +37,12 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
-**AI agents** (Claude Code, codex, …): every command can print JSON with fr, fa, k²eff and warnings.
+**AI agents** (Claude Code, codex, …): every command can print JSON with fr, fa, k²eff and warnings. Install the guide once, then ask in plain language.
 
 ```bash
-sawsim guide --install-claude                 # install the Claude Code skill; other agents run `sawsim guide` first
+sawsim guide --install-claude                 # Claude Code: install as a skill (~/.claude/skills/sawsim)
+sawsim guide --install-codex                  # codex: add to the global instructions ~/.codex/AGENTS.md
+sawsim guide                                  # any other agent: print the full guide
 sawsim locate '{"model_id": "sp_tcsaw"}'      # bracket resonance/antiresonance and zoom
 sawsim converge '{"model_id": "sp_tcsaw"}'    # mesh-refinement check
 ```
@@ -61,17 +63,17 @@ Headless Linux needs `libglu1-mesa libopengl0` for Gmsh. See [Getting started](h
 
 ## Validation
 
-Each template is compared point by point with an independent reference FEM solution; resonance and anti-resonance frequencies agree for all templates, errors around the main resonance are 0.1 – 2 %, and 2D multilayers deviate above 2.4 GHz in the higher-order mode region. Full error table, figures and discussion in [Validation](https://github.com/Duane245/sawsim/blob/main/docs/validation.en.md). `pytest` reproduces the comparison at 5 – 6 frequencies per template.
+Each template is compared point by point with an independent reference FEM solution; the resonance fr and anti-resonance fa of all nine templates agree with the reference within 0.5 MHz (mostly below 0.1 MHz), amplitude errors around the main resonance are 0.1 – 2 %, and 2D multilayers deviate above 2.4 GHz in the higher-order mode region. Full error table, figures and discussion in [Validation](https://github.com/Duane245/sawsim/blob/main/docs/validation.en.md). `pytest` reproduces the comparison at 5 – 6 frequencies per template.
 
 <div align="center">
 <img src="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/compare_2p5d_double.png" width="640"><br>
-<sub>2.5D SP double layer (LiNbO₃ 0.6 µm / Si 6.51 µm), 251 points. Dashed: sawsim, solid: reference; relative L2 error of |Y| 0.15 %.</sub>
+<sub>2.5D SP double layer (LiTaO₃ 0.6 µm / Si 6.51 µm), 251 points. Dashed: sawsim, solid: reference; relative L2 error of |Y| 0.15 %.</sub>
 </div>
 
 ## Documentation
 
 - [Getting started](https://github.com/Duane245/sawsim/blob/main/docs/getting-started.en.md) — install, first run, output files, units
-- [Models](https://github.com/Duane245/sawsim/blob/main/docs/models.en.md) — the nine templates, parameters, displacement models, boundaries, known limitations
+- [Models](https://github.com/Duane245/sawsim/blob/main/docs/models.en.md) — the ten templates (incl. the generic stack), parameters, displacement models, boundaries, mesh resolution, known limitations
 - [Materials and orientation](https://github.com/Duane245/sawsim/blob/main/docs/materials-and-orientation.en.md) — built-in materials, record format, custom import, ZXZ Euler angles
 - [Validation](https://github.com/Duane245/sawsim/blob/main/docs/validation.en.md) — point-by-point comparison with the reference and how to read it
 - [Driving SawSim with AI agents](https://github.com/Duane245/sawsim/blob/main/docs/ai-agents.en.md) — JSON commands, output fields, fr/fa accuracy, agent acceptance results
@@ -84,7 +86,6 @@ examples/          AI-agent acceptance tasks
 tests/             regression and API tests; tests/data holds the reference curves
 docs/              documentation and figures
 matlab/            the v0.x MATLAB + Gmsh implementation (historical, MIT)
-tools/             maintenance scripts
 ```
 
 ## License

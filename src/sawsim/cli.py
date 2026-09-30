@@ -139,9 +139,38 @@ def cmd_compare(args):
     return _call(agent.compare_curve, args.result_dir, args.reference)
 
 
+CODEX_BLOCK = """<!-- sawsim:begin -->
+## SawSim (SAW resonator FEM)
+
+For SAW / TC-SAW / IHP-SAW resonator questions (fr, fa, k2eff, pitch or metal-ratio design,
+layer stacks, custom materials) use the installed `sawsim` command. **Run `sawsim guide` first**
+and follow it. Short form: `sawsim schema <model_id>` -> `sawsim validate '<json>'` ->
+`sawsim locate '<json>'` (fr/fa/k2eff) -> `sawsim converge '<json>'` (mesh check). Every command
+prints one JSON object on stdout. Report fr/fa in GHz, k2eff in %, the uncertainty, the mesh
+check, any warnings, and which template defaults you kept.
+<!-- sawsim:end -->
+"""
+
+
+def _install_codex(target):
+    """Insert or replace the SawSim block in codex's global AGENTS.md."""
+    import os, re
+    path = Path(target).expanduser() if target else Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser() / "AGENTS.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    pattern = re.compile(r"<!-- sawsim:begin -->.*?<!-- sawsim:end -->\n?", re.S)
+    new = pattern.sub(lambda m: CODEX_BLOCK, text) if pattern.search(text) else \
+        (text + ("\n" if text and not text.endswith("\n") else "") + ("\n" if text else "") + CODEX_BLOCK)
+    path.write_text(new, encoding="utf-8")
+    print(f"installed: {path}", file=sys.stderr)
+
+
 def cmd_guide(args):
-    """Print the agent guide, or install it as a Claude Code skill."""
+    """Print the agent guide, or install it for Claude Code (skill) / codex (global AGENTS.md)."""
     src = Path(__file__).with_name("skill") / "SKILL.md"
+    if args.install_codex is not None:
+        _install_codex(args.install_codex)
+        return 0
     if args.install_claude:
         target = Path(args.install_claude).expanduser() / "sawsim" / "SKILL.md"
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -218,6 +247,9 @@ def main(argv=None):
     g = sub.add_parser("guide", help="print the AI-agent guide (workflow, fields, pitfalls)")
     g.add_argument("--install-claude", nargs="?", const="~/.claude/skills", metavar="SKILLS_DIR",
                    help="install the guide as a Claude Code skill (default ~/.claude/skills)")
+    g.add_argument("--install-codex", nargs="?", const="", metavar="AGENTS_MD",
+                   help="add a SawSim section to codex's global AGENTS.md (default $CODEX_HOME/AGENTS.md "
+                        "or ~/.codex/AGENTS.md); re-running replaces it")
     g.set_defaults(fn=cmd_guide)
 
     se = sub.add_parser("serve", help="start the local web UI"); se.set_defaults(fn=cmd_serve)

@@ -12,10 +12,12 @@ SawSim 2.1 起为 AI 编程代理（Claude Code、codex 等）提供了一套命
 pip install sawsim
 sawsim guide                      # 打印给 AI 的使用说明（流程、字段、易错点）
 sawsim guide --install-claude     # 安装为 Claude Code skill（~/.claude/skills/sawsim/SKILL.md）
+sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.md）
 ```
 
 - **Claude Code**：安装 skill 后，直接用自然语言提问，例如“用 sawsim 算一下 42°Y-X LT 薄膜 600 nm 键合在硅上的 fr 和 k²”。
-- **codex 等其他代理**：告诉它“已安装 sawsim，先运行 `sawsim guide`”即可；在本仓库内工作时会读取 `AGENTS.md`。
+- **codex**：`sawsim guide --install-codex` 在全局指令 `~/.codex/AGENTS.md`（或 `$CODEX_HOME/AGENTS.md`）中写入一段简短说明，codex 每次启动都会读到；重复执行只替换该段，不影响文件中的其他内容。在本仓库内工作时 codex 还会读取仓库的 `AGENTS.md`。
+- **其他代理**：告诉它“已安装 sawsim，先运行 `sawsim guide`”即可。
 - 不装 skill 也能用：`sawsim --help` 第一行就提示代理先运行 `sawsim guide`。
 
 ## 命令

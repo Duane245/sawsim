@@ -105,6 +105,18 @@ def test_concurrent_identical_runs_share_cache(tmp_path):
     assert [p.name for p in tmp_path.iterdir()] == [Path(outs[0]['output_dir']).name]
 
 
+def test_guide_install_codex_is_idempotent(tmp_path):
+    target = tmp_path / 'AGENTS.md'
+    target.write_text('# my rules\nkeep me\n', encoding='utf-8')
+    for _ in range(2):
+        p = subprocess.run([sys.executable, '-m', 'sawsim.cli', 'guide', '--install-codex', str(target)],
+                           capture_output=True, text=True)
+        assert p.returncode == 0
+    text = target.read_text(encoding='utf-8')
+    assert text.startswith('# my rules\nkeep me\n') and text.count('<!-- sawsim:begin -->') == 1
+    assert 'sawsim guide' in text
+
+
 def _cli(*args):
     p = subprocess.run([sys.executable, '-m', 'sawsim.cli', *args], capture_output=True, text=True)
     return p.returncode, json.loads(p.stdout)

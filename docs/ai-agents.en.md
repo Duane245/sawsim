@@ -13,10 +13,12 @@ and check mesh convergence without reading Python source or parsing curve files.
 pip install sawsim
 sawsim guide                      # print the agent guide (workflow, fields, pitfalls)
 sawsim guide --install-claude     # install it as a Claude Code skill (~/.claude/skills/sawsim/SKILL.md)
+sawsim guide --install-codex      # add it to codex's global instructions (~/.codex/AGENTS.md)
 ```
 
 - **Claude Code**: after installing the skill, just ask, e.g. "use sawsim to get fr and k² of a 600 nm 42°Y-X LT film bonded on Si".
-- **codex and other agents**: say "sawsim is installed, run `sawsim guide` first"; inside this repository they also read `AGENTS.md`.
+- **codex**: `sawsim guide --install-codex` adds a short section to the global instructions `~/.codex/AGENTS.md` (or `$CODEX_HOME/AGENTS.md`), which codex reads at every start; re-running replaces only that section. Inside this repository codex also reads the repo's `AGENTS.md`.
+- **other agents**: say "sawsim is installed, run `sawsim guide` first".
 - Without the skill it still works: the first line of `sawsim --help` tells agents to run `sawsim guide`.
 
 ## Commands
