@@ -37,6 +37,14 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
+**AI agents** (Claude Code, codex, …): every command can print JSON with fr, fa, k²eff and warnings.
+
+```bash
+sawsim guide --install-claude                 # install the Claude Code skill; other agents run `sawsim guide` first
+sawsim locate '{"model_id": "sp_tcsaw"}'      # bracket resonance/antiresonance and zoom
+sawsim converge '{"model_id": "sp_tcsaw"}'    # mesh-refinement check
+```
+
 Headless Linux needs `libglu1-mesa libopengl0` for Gmsh. See [Getting started](https://github.com/Duane245/sawsim/blob/main/docs/getting-started.en.md).
 
 ## Capabilities
@@ -66,11 +74,13 @@ Each template is compared point by point with an independent reference FEM solut
 - [Models](https://github.com/Duane245/sawsim/blob/main/docs/models.en.md) — the nine templates, parameters, displacement models, boundaries, known limitations
 - [Materials and orientation](https://github.com/Duane245/sawsim/blob/main/docs/materials-and-orientation.en.md) — built-in materials, record format, custom import, ZXZ Euler angles
 - [Validation](https://github.com/Duane245/sawsim/blob/main/docs/validation.en.md) — point-by-point comparison with the reference and how to read it
+- [Driving SawSim with AI agents](https://github.com/Duane245/sawsim/blob/main/docs/ai-agents.en.md) — JSON commands, output fields, fr/fa accuracy, agent acceptance results
 
 ## Repository layout
 
 ```
-src/sawsim/        Python package (api, cli, config, models, solver, saw2d, sp_meshes, sp_hex_meshes, material_library)
+src/sawsim/        Python package (api, cli, agent, metrics, config, models, solver, saw2d, sp_meshes, sp_hex_meshes, material_library, skill)
+examples/          AI-agent acceptance tasks
 tests/             regression and API tests; tests/data holds the reference curves
 docs/              documentation and figures
 matlab/            the v0.x MATLAB + Gmsh implementation (historical, MIT)

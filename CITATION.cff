@@ -9,6 +9,8 @@ abstract: >
   complex-coordinate-stretched PML, intrinsic ZXZ Euler rotation of anisotropic crystals,
   Gmsh meshing, PARDISO/SuperLU direct solves with frequency-parallel Y11 sweeps, and
   point-by-point verification against an independent reference FEM solution.
+  Since 2.1 a JSON command-line interface (fr, fa, k2eff, warnings, mesh-convergence checks)
+  and a shipped agent guide let AI coding agents run the simulations end to end.
   Versions 0.x are the MATLAB + Gmsh implementation.
 authors:
   - family-names: Duan
@@ -16,8 +18,8 @@ authors:
 repository-code: "https://github.com/Duane245/sawsim"
 url: "https://github.com/Duane245/sawsim"
 license: AGPL-3.0-or-later
-version: "2.0.0"
-date-released: "2026-09-12"
+version: "2.1.0"
+date-released: "2026-10-01"
 identifiers:
   - type: doi
     value: "10.5281/zenodo.20362278"

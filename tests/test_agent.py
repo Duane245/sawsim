@@ -1,0 +1,110 @@
+"""Agent interface: metrics, JSON operations and the --json CLI contract."""
+import json
+import math
+import subprocess
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from conftest import MODELS, load_case
+from sawsim import agent
+from sawsim.metrics import compare, resonances
+
+
+def _lorentz_curve(fr, fa, n=201, lo=1.6e9, hi=2.0e9):
+    """|Y| of a lossless BVD-like resonator: zero at fa, pole at fr."""
+    f = np.linspace(lo, hi, n)
+    return f, np.abs(f * (f ** 2 - fa ** 2) / (f ** 2 - fr ** 2))
+
+
+def test_resonances_synthetic_subgrid():
+    f, y = _lorentz_curve(1.7512345e9, 1.8123456e9)
+    r = resonances(f, y)
+    assert abs(r['fr_ghz'] - 1.7512345) < r['uncertainty_mhz'] * 1e-3
+    assert abs(r['fa_ghz'] - 1.8123456) < r['uncertainty_mhz'] * 1e-3
+    assert r['k2eff'] == pytest.approx(math.pi ** 2 / 4 * (1.8123456 - 1.7512345) / 1.8123456, rel=1e-2)
+    assert not r['warnings']
+
+
+def test_resonances_band_edge_warning():
+    f, y = _lorentz_curve(1.55e9, 1.62e9)
+    r = resonances(f, y)
+    assert r['fr_ghz'] is None and any(w.startswith('peak_at_band_edge') for w in r['warnings'])
+
+
+def test_resonances_missing_antiresonance():
+    f, y = _lorentz_curve(1.9511e9, 2.2e9)
+    r = resonances(f, y)
+    assert r['fr_ghz'] is not None and r['fa_ghz'] is None
+    assert any(w.startswith('antiresonance_not_found') for w in r['warnings'])
+
+
+@pytest.mark.parametrize('model', MODELS)
+def test_reference_fr_fa_agree(model):
+    """fr/fa of the stored solver curve vs the independent reference curve, within 1 MHz."""
+    _, z = load_case(model)
+    d = compare(resonances(z['frequency_hz'], z['reference_magnitude']),
+                resonances(z['frequency_hz'], z['sawsim_magnitude']))
+    assert abs(d['fr_diff_mhz']) < 1.0 and abs(d['fa_diff_mhz']) < 1.0
+
+
+def test_templates_and_schema():
+    t = agent.list_templates()['templates']
+    assert len(t) == 9
+    s = agent.describe_template('sp_tcsaw')
+    assert s['ok'] and s['mode_extensions'] == [0] and 'pitch_um' in s['ranges'] and 'pitch_um' in s['fields']
+    assert not agent.describe_template('nope')['ok']
+
+
+def test_materials_listed():
+    m = agent.list_materials()
+    ids = {r['id'] for r in m['materials']}
+    assert {'sp_baseline', 'linbo3_tc', 'al', 'cu', 'sio2'} <= ids and m['euler_convention']['id'] == 'zxz'
+
+
+def test_validate_reports_allowed_values():
+    ok = agent.validate({'model_id': 'sp_single_layer', 'pitch_um': 1.0})
+    assert ok['ok'] and ok['config']['pitch_um'] == 1.0 and len(ok['config_hash']) == 12
+    bad = agent.validate({'model_id': 'sp_tcsaw', 'mode_extension': 1})
+    assert not bad['ok'] and bad['errors'] and bad['allowed']['mode_extensions'] == [0]
+    unknown = agent.validate({'model_id': 'no_such'})
+    assert not unknown['ok'] and 'sp_single_layer' in unknown['allowed']['model_id']
+
+
+def test_run_summarize_and_cache(tmp_path, monkeypatch):
+    monkeypatch.setenv('SAWSIM_RUNS_DIR', str(tmp_path))
+    cfg = {'model_id': 'sp_single_layer', 'points': 21, 'start_ghz': 1.7, 'stop_ghz': 1.95}
+    a = agent.run(cfg)
+    assert a['ok'] and not a['cached'] and 1.78 < a['fr_ghz'] < 1.83 and a['fa_ghz'] > a['fr_ghz']
+    assert a['k2eff'] > 0 and a['artifacts'] and a['next_steps']
+    b = agent.run(cfg)
+    assert b['cached'] and b['fr_ghz'] == a['fr_ghz'] and b['output_dir'] == a['output_dir']
+    assert agent.summarize(a['output_dir'])['fr_ghz'] == a['fr_ghz']
+
+
+def test_concurrent_identical_runs_share_cache(tmp_path):
+    """Two processes asking for the same config must both succeed and end with one result dir."""
+    env = dict(__import__('os').environ, SAWSIM_RUNS_DIR=str(tmp_path))
+    cmd = [sys.executable, '-m', 'sawsim.cli', 'run', '{"model_id": "sp_single_layer", "points": 5}', '--json', '-q']
+    procs = [subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, env=env)
+             for _ in range(2)]
+    outs = [json.loads(p.communicate()[0]) for p in procs]
+    assert all(o['ok'] for o in outs) and outs[0]['output_dir'] == outs[1]['output_dir']
+    assert [p.name for p in tmp_path.iterdir()] == [Path(outs[0]['output_dir']).name]
+
+
+def _cli(*args):
+    p = subprocess.run([sys.executable, '-m', 'sawsim.cli', *args], capture_output=True, text=True)
+    return p.returncode, json.loads(p.stdout)
+
+
+def test_cli_json_stdout_is_pure(tmp_path):
+    rc, out = _cli('templates', '--json')
+    assert rc == 0 and len(out['templates']) == 9
+    rc, out = _cli('validate', '{"model_id": "sp_tcsaw", "mode_extension": 1}')
+    assert rc == 1 and out['ok'] is False
+    rc, out = _cli('run', '{"model_id": "sp_single_layer"}', '--set', 'points=5', '--mesh-only', '--json', '-q',
+                   '-o', str(tmp_path / 'm'))
+    assert rc == 0 and out['ok'] and out['dofs_estimate'] > 100

@@ -37,6 +37,14 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
+**AI 代理**（Claude Code、codex 等）：每条命令都可输出 JSON，直接给出 fr、fa、k²eff 与警告。
+
+```bash
+sawsim guide --install-claude                 # 安装 Claude Code skill；其他代理先运行 sawsim guide
+sawsim locate '{"model_id": "sp_tcsaw"}'      # 自动定位谐振/反谐振并细扫
+sawsim converge '{"model_id": "sp_tcsaw"}'    # 网格加密检查
+```
+
 无图形界面的 Linux 上 Gmsh 需要 `libglu1-mesa libopengl0`。详见 [快速开始](https://github.com/Duane245/sawsim/blob/main/docs/getting-started.md)。
 
 ## 能力
@@ -66,11 +74,13 @@ sawsim run config.json -o out/dbl
 - [模型库](https://github.com/Duane245/sawsim/blob/main/docs/models.md) — 九种模板、参数、位移模型、边界与已知限制
 - [材料库与晶体取向](https://github.com/Duane245/sawsim/blob/main/docs/materials-and-orientation.md) — 内置材料、记录格式、自定义导入、ZXZ 欧拉角
 - [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md) — 与参考解的逐点比对及解读
+- [用 AI 代理驱动 SawSim](https://github.com/Duane245/sawsim/blob/main/docs/ai-agents.md) — JSON 命令、输出字段、fr/fa 精度、代理验收结果
 
 ## 项目结构
 
 ```
-src/sawsim/        Python 包（api、cli、config、models、solver、saw2d、sp_meshes、sp_hex_meshes、material_library）
+src/sawsim/        Python 包（api、cli、agent、metrics、config、models、solver、saw2d、sp_meshes、sp_hex_meshes、material_library、skill）
+examples/          AI 代理验收任务
 tests/             回归与 API 测试，tests/data 为参考曲线
 docs/              文档与图
 matlab/            v0.x 的 MATLAB + Gmsh 实现（历史版本，MIT）
