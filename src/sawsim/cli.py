@@ -115,7 +115,7 @@ def cmd_validate(args):
 
 def cmd_summarize(args):
     from sawsim import agent
-    return _call(agent.summarize, args.result_dir)
+    return _call(agent.summarize, args.result_dir, with_curve=args.curve)
 
 
 def cmd_locate(args):
@@ -181,6 +181,12 @@ def cmd_guide(args):
     return 0
 
 
+def cmd_plot(args):
+    from sawsim import agent
+    labels = args.labels.split(',') if args.labels else None
+    return _call(agent.plot, args.inputs, args.output, labels=labels, quantity=args.quantity, mark=not args.no_marks)
+
+
 def cmd_serve(args):
     print("`sawsim serve` (local web UI) ships with the web extra in a later step; run the API with:\n"
           "  python -m uvicorn sawsim_web.app:app --port 8765", file=sys.stderr)
@@ -190,7 +196,7 @@ def cmd_serve(args):
 def main(argv=None):
     p = argparse.ArgumentParser(prog="sawsim", description="SawSim unit-cell piezoelectric FEM. "
                                 "AI agents: run `sawsim guide` first; add --json, or use the JSON-only commands "
-                                "schema/materials/validate/locate/scan/converge/compare.")
+                                "schema/materials/validate/locate/scan/converge/compare/plot.")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     def config_args(sp):
@@ -225,7 +231,17 @@ def main(argv=None):
     config_args(v); v.set_defaults(fn=cmd_validate)
 
     su = sub.add_parser("summarize", help="[JSON] fr/fa/k2eff/warnings of an existing result directory")
-    su.add_argument("result_dir"); su.set_defaults(fn=cmd_summarize)
+    su.add_argument("result_dir")
+    su.add_argument("--curve", action="store_true", help="also include the sampled admittance arrays")
+    su.set_defaults(fn=cmd_summarize)
+
+    pl = sub.add_parser("plot", help="[JSON] overlay admittance curves (result dirs and/or reference CSV/npz) in one figure")
+    pl.add_argument("inputs", nargs="+", help="result directories and/or reference files (CSV f,|Y| or f,Re,Im; npz)")
+    pl.add_argument("-o", "--output", required=True, help="figure path (.png, .svg or .pdf)")
+    pl.add_argument("--labels", help="comma-separated legend labels (default: the config fields that differ)")
+    pl.add_argument("--quantity", choices=["abs", "db", "real", "imag"], default="abs", help="default |Y| on a log axis")
+    pl.add_argument("--no-marks", action="store_true", help="do not mark fr/fa")
+    pl.set_defaults(fn=cmd_plot)
 
     lo = sub.add_parser("locate", help="[JSON] coarse sweep, bracket fr/fa, then a zoomed sweep around them")
     config_args(lo); lo.add_argument("--points", type=int, default=101, help="points of the zoomed sweep")

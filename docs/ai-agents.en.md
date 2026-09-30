@@ -34,7 +34,8 @@ sawsim guide --install-codex      # add it to codex's global instructions (~/.co
 | `sawsim converge <cfg>` | rerun with half the mesh size, report the fr/fa shift (MHz, ppm) |
 | `sawsim scan <cfg> --param P --values a,b,c [--locate]` | parameter scan, table of fr/fa/k² |
 | `sawsim compare <result dir> <reference.csv/npz>` | fr/fa deviation from a reference \|Y\| curve |
-| `sawsim summarize <result dir>` | re-extract metrics from an existing result |
+| `sawsim summarize <result dir> [--curve]` | re-extract metrics from an existing result; `--curve` adds the sampled admittance arrays |
+| `sawsim plot <dirs or reference files>... -o fig.png` | overlay admittance curves in one figure with fr (dashed) and fa (dotted) marked; the legend shows the config fields that differ; reference CSV / npz can be added |
 
 `<cfg>` is a JSON file path or inline JSON starting with `{`; `--set key=value` overrides one field.
 Exit code 0 = success, 1 = `"ok": false` with `error`/`errors` in the JSON. Progress goes to stderr only.
@@ -59,7 +60,8 @@ Runs are cached by config hash in `$SAWSIM_RUNS_DIR` (default `./sawsim_runs`); 
 | `modes` | other in-band peaks (e.g. a Rayleigh spurious next to the SH main mode) |
 | `warnings` | `peak_at_band_edge`, `antiresonance_not_found`, `coarse_sampling`, `multiple_modes` |
 | `next_steps` | suggestions derived from the warnings |
-| `artifacts` | paths of Y11.png, mesh plot, displacement/potential field plots, admittance.csv |
+| `artifacts` | paths of Y11.png, mesh plot, displacement/potential field plots, admittance.csv (frequency, Re, Im, \|Y\|) |
+| `coarse` (`locate` only) | the full-band coarse sweep (directory and band); the top-level result is the zoom around fr–fa |
 | `q_r`, `q_a` | always null: the solver model is lossless, resonances are poles |
 
 ## Accuracy

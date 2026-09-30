@@ -130,3 +130,28 @@ def test_cli_json_stdout_is_pure(tmp_path):
     rc, out = _cli('run', '{"model_id": "sp_single_layer"}', '--set', 'points=5', '--mesh-only', '--json', '-q',
                    '-o', str(tmp_path / 'm'))
     assert rc == 0 and out['ok'] and out['dofs_estimate'] > 100
+
+
+def test_load_curve_formats(tmp_path):
+    f = np.linspace(1.6e9, 2.0e9, 11)
+    y = 1j * f * 1e-9
+    (tmp_path / 'mag.csv').write_text('f_hz,absY\n' + '\n'.join('%r,%r' % (a, abs(b)) for a, b in zip(f, y)))
+    (tmp_path / 'cplx.csv').write_text('# GHz, Re, Im\n' + '\n'.join('%r,%r,%r' % (a * 1e-9, b.real, b.imag) for a, b in zip(f, y)))
+    for name in ('mag.csv', 'cplx.csv'):
+        ff, yy, _ = agent.load_curve(tmp_path / name)
+        assert np.allclose(ff, f) and np.allclose(np.abs(yy), np.abs(y))
+    ff, yy, label = agent.load_curve(Path(__file__).parent / 'data' / 'sp_tcsaw.npz')
+    assert len(ff) == 201 and label.endswith('(reference)')
+
+
+def test_plot_overlay_and_curve_json(tmp_path, monkeypatch):
+    monkeypatch.setenv('SAWSIM_RUNS_DIR', str(tmp_path / 'runs'))
+    base = {'model_id': 'sp_single_layer', 'points': 21, 'start_ghz': 1.7, 'stop_ghz': 1.95}
+    a, b = agent.run(dict(base, metal_ratio=0.4)), agent.run(dict(base, metal_ratio=0.6))
+    ref = Path(__file__).parent / 'data' / 'sp_single_layer.npz'
+    out = agent.plot([a['output_dir'], b['output_dir'], str(ref)], tmp_path / 'fig.png')
+    assert out['ok'] and (tmp_path / 'fig.png').stat().st_size > 10000
+    assert [c['label'] for c in out['curves']] == ['metal_ratio=0.4', 'metal_ratio=0.6', 'sp_single_layer (reference)']
+    assert all(c['fr_ghz'] for c in out['curves'])
+    s = agent.summarize(a['output_dir'], with_curve=True)
+    assert len(s['curve']['abs']) == 21 and s['curve']['frequency_ghz'][0] == 1.7

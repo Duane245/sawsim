@@ -207,7 +207,7 @@ def validate(config) -> dict:
 
 # ---------------------------------------------------------------- running
 
-def summarize(result_dir) -> dict:
+def summarize(result_dir, *, with_curve: bool = False) -> dict:
     d = Path(result_dir)
     def load(name):
         p = d / name
@@ -231,7 +231,8 @@ def summarize(result_dir) -> dict:
                 elapsed_s=meta.get('elapsed_seconds'),
                 artifacts={k: str(d / k) for k in ('Y11.png', 'mesh.png', 'disp_field.png', 'phi_field.png',
                                                    'admittance.csv', 'curve.json') if (d / k).exists()},
-                next_steps=_next_steps(res, config))
+                next_steps=_next_steps(res, config),
+                **(dict(curve=curve_data(d)) if with_curve else {}))
 
 
 def _next_steps(res, config):
@@ -353,7 +354,10 @@ def locate(config, *, zoom_points: int = 101, on_progress=None) -> dict:
     if s.get('fr_ghz') is None or s.get('fa_ghz') is None:
         return dict(ok=False, error='could not bracket fr and fa within the template band %s..%s GHz' % (f_lo, f_hi),
                     history=history, last=s)
-    coarse = dict(output_dir=s['output_dir'], fr_ghz=s['fr_ghz'], fa_ghz=s['fa_ghz'])
+    coarse = dict(output_dir=s['output_dir'], fr_ghz=s['fr_ghz'], fa_ghz=s['fa_ghz'],
+                  band_ghz=[s['config']['start_ghz'], s['config']['stop_ghz']],
+                  note='full-band sweep; the top-level result is the zoom around fr..fa. '
+                       'Plot both with: sawsim plot <coarse output_dir> <output_dir> -o fig.png')
     z = s
     for _ in range(3):  # zoom; repeat if the fr..fa gap is still under-sampled
         fr, fa = z['fr_ghz'], z['fa_ghz']
@@ -418,20 +422,144 @@ def converge(config, *, factor: float = 0.5, on_progress=None) -> dict:
                       % (shift, step / 2)))
 
 
-def compare_curve(result_dir, reference_npz_or_csv) -> dict:
-    """Compare a run with a reference |Y| curve (npz with frequency_hz + reference_magnitude, or CSV f_hz,|Y|)."""
+def load_curve(path):
+    """(frequency_hz, Y or |Y|, label) from a result directory, admittance/reference CSV or npz.
+
+    CSV: 2 columns f,|Y| or 3+ columns f,Re,Im[,...] (header lines are skipped); frequencies
+    below 1e6 are taken as GHz.
+    """
+    p = Path(path)
+    if p.is_dir():
+        c = json.loads((p / 'curve.json').read_text(encoding='utf-8'))
+        f = np.asarray(c['frequency_ghz']) * 1e9
+        return f, np.asarray(c['real']) + 1j * np.asarray(c['imag']), p.name
+    if p.suffix == '.npz':
+        z = np.load(p)
+        f = z['frequency_hz']
+        if 'reference_magnitude' in z:
+            return np.asarray(z['frequency_hz'], dtype=float), np.asarray(z['reference_magnitude']), p.stem + ' (reference)'
+        y = z['admittance']
+    else:
+        rows = []
+        for line in p.read_text(encoding='utf-8').splitlines():
+            try:
+                rows.append([float(x) for x in line.replace(';', ',').split(',') if x.strip()])
+            except ValueError:
+                continue  # header / comment
+        a = np.asarray([r for r in rows if len(r) >= 2])
+        f = a[:, 0]
+        y = a[:, 1] + 1j * a[:, 2] if a.shape[1] >= 3 else a[:, 1]
+    f = np.asarray(f, dtype=float)
+    if f.max() < 1e6:
+        f = f * 1e9
+    return f, np.asarray(y), p.stem
+
+
+def curve_data(result_dir) -> dict:
+    """The sampled admittance of a result as JSON arrays (GHz, S/m)."""
+    f, y, _ = load_curve(result_dir)
+    r6 = lambda a: [float('%.6g' % v) for v in a]
+    return dict(frequency_ghz=[round(v, 7) for v in (f * 1e-9).tolist()], real=r6(np.real(y)), imag=r6(np.imag(y)),
+                abs=r6(np.abs(y)))
+
+
+def compare_curve(result_dir, reference) -> dict:
+    """fr/fa/k2 of a run vs a reference |Y| curve (npz, or CSV f,|Y| / f,Re,Im)."""
     s = summarize(result_dir)
     if not s.get('ok'):
         return s
-    p = Path(reference_npz_or_csv)
-    if p.suffix == '.npz':
-        z = np.load(p)
-        f, m = z['frequency_hz'], z['reference_magnitude']
-    else:
-        a = np.loadtxt(p, delimiter=',', comments='#')
-        f, m = a[:, 0], a[:, 1]
-    ref = resonances(f, m)
+    f, y, _ = load_curve(reference)
+    ref = resonances(f, y)
     return dict(ok=True, run=dict(fr_ghz=s['fr_ghz'], fa_ghz=s['fa_ghz'], k2eff=s['k2eff']),
                 reference=dict(fr_ghz=ref['fr_ghz'], fa_ghz=ref['fa_ghz'], k2eff=ref['k2eff'],
                                frequency_step_mhz=ref['frequency_step_mhz']),
                 deviation=compare(ref, s))
+
+
+_LABEL_KEYS = ('model_id', 'pitch_um', 'metal_ratio', 'electrode_um', 'substrate_um', 'mesh_um', 'mode_extension',
+               'substrate_material', 'electrode_material', 'euler_theta_deg')
+
+
+def _auto_labels(paths):
+    """Label result dirs by the config fields that differ between them."""
+    inputs = []
+    for p in paths:
+        f = Path(p) / 'input.json'
+        inputs.append(json.loads(f.read_text(encoding='utf-8')) if Path(p).is_dir() and f.exists() else None)
+    runs = [i for i in inputs if i]
+    keys = [k for k in _LABEL_KEYS if len({json.dumps(i.get(k)) for i in runs}) > 1]
+    for k in ('layers', 'coatings'):
+        if len({json.dumps([(l['material_id'], l['thickness_um']) for l in i.get(k, [])]) for i in runs}) > 1:
+            keys.append(k)
+    if not keys and len(runs) > 1 and len({(i['start_ghz'], i['stop_ghz'], i['points']) for i in runs}) > 1:
+        keys = ['band']
+    labels = []
+    for p, i in zip(paths, inputs):
+        if not i:
+            labels.append(load_curve(p)[2] if Path(p).suffix == '.npz' else Path(p).stem)
+        elif not keys:
+            labels.append(i.get('model_id', Path(p).name))
+        else:
+            parts = []
+            for k in keys:
+                if k == 'band':
+                    parts.append('%g-%g GHz, %d pts' % (i['start_ghz'], i['stop_ghz'], i['points']))
+                elif k in ('layers', 'coatings'):
+                    parts.append('%s=%s' % (k, '/'.join('%s %g' % (l['material_id'], l['thickness_um']) for l in i[k])))
+                else:
+                    parts.append('%s=%s' % (k, i.get(k)))
+            labels.append(', '.join(parts))
+    return labels
+
+
+def plot(inputs, output, *, labels=None, quantity: str = 'abs', mark: bool = True) -> dict:
+    """Overlay admittance curves (result dirs and/or reference files) in one figure, fr/fa marked.
+
+    quantity: 'abs' (|Y|, log axis), 'db' (20 log10 |Y|), 'real', 'imag'. The output format
+    follows the file extension (.png, .svg, .pdf).
+    """
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    if quantity not in ('abs', 'db', 'real', 'imag'):
+        return dict(ok=False, error='quantity must be one of abs, db, real, imag')
+    paths = [str(x) for x in inputs]
+    names = list(labels) if labels else _auto_labels(paths)
+    if len(names) != len(paths):
+        return dict(ok=False, error='need one label per input')
+    fig, ax = plt.subplots(figsize=(8, 4.6), dpi=150)
+    rows = []
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    for n, (path, name) in enumerate(zip(paths, names)):
+        color = colors[n % len(colors)]
+        try:
+            f, y, _ = load_curve(path)
+        except Exception as e:
+            plt.close(fig)
+            return dict(ok=False, error='cannot read %s: %s' % (path, e))
+        g = f * 1e-9
+        v = {'abs': np.abs(y), 'db': 20 * np.log10(np.maximum(np.abs(y), 1e-300)),
+             'real': np.real(y), 'imag': np.imag(y)}[quantity]
+        ax.plot(g, v, color=color, lw=1.4, label=name)
+        r = resonances(f, y)
+        rows.append(dict(input=path, label=name, fr_ghz=r['fr_ghz'], fa_ghz=r['fa_ghz'], k2eff=r['k2eff'],
+                         band_ghz=[round(float(g.min()), 6), round(float(g.max()), 6)], points=len(g)))
+        if mark:
+            for key, ls in (('fr_ghz', '--'), ('fa_ghz', ':')):
+                if r[key]:
+                    ax.axvline(r[key], color=color, ls=ls, lw=.9, alpha=.8)
+    if quantity == 'abs':
+        ax.set_yscale('log')
+    ax.set_xlabel('Frequency (GHz)')
+    ax.set_ylabel({'abs': '|Y| (S/m)', 'db': '20 log10 |Y| (dB S/m)', 'real': 'Re Y (S/m)',
+                   'imag': 'Im Y (S/m)'}[quantity])
+    ax.grid(True, which='both', alpha=.25)
+    ax.legend(fontsize=8, loc='best')
+    if mark:
+        ax.set_title('dashed: fr   dotted: fa', fontsize=8, loc='right', color='0.4')
+    fig.tight_layout()
+    out = Path(output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out)
+    plt.close(fig)
+    return dict(ok=True, output=str(out.resolve()), quantity=quantity, curves=rows)

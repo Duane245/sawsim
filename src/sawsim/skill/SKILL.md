@@ -30,8 +30,20 @@ means `"ok": false` with an `error`/`errors` field. Runs are cached by config ha
 
 Other commands: `sawsim run '<json>' --json` (one sweep exactly as configured),
 `sawsim scan '<json>' --param pitch_um --values 1.0,1.05,1.1 [--locate]`,
-`sawsim summarize <dir>`, `sawsim compare <dir> <reference.csv|npz>` (fr/fa deviation vs a
-reference |Y| curve; CSV columns f_hz,|Y|), `sawsim materials`.
+`sawsim summarize <dir> [--curve]` (`--curve` adds the sampled Y arrays),
+`sawsim compare <dir> <reference.csv|npz>` (fr/fa deviation vs a reference curve; CSV columns
+f,|Y| or f,Re,Im), `sawsim materials`.
+
+**Admittance curves / figures.** Every result directory holds `admittance.csv`
+(frequency_hz, real_y, imag_y, abs_y), `curve.json` and `Y11.png`. To show the user curves,
+make one overlay figure (fr dashed, fa dotted, legend = the config fields that differ):
+
+```bash
+sawsim plot <dir1> <dir2> [reference.csv] -o compare.png [--quantity abs|db|real|imag] [--labels a,b,c]
+```
+
+`locate` returns the **zoom** around fr..fa; the full-band curve is `coarse.output_dir`
+(plot both to show the whole response and the resolved resonance).
 Config can be a file path or inline JSON; `--set key=value` overrides one field.
 
 ## Output fields

@@ -33,7 +33,8 @@ sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.
 | `sawsim converge <cfg>` | 网格尺寸减半重算，报告 fr/fa 的移动量（MHz、ppm） |
 | `sawsim scan <cfg> --param P --values a,b,c [--locate]` | 参数扫描，返回 fr/fa/k² 表 |
 | `sawsim compare <结果目录> <参考.csv/npz>` | 与参考 \|Y\| 曲线比较 fr/fa 偏差 |
-| `sawsim summarize <结果目录>` | 对已有结果重新提取指标 |
+| `sawsim summarize <结果目录> [--curve]` | 对已有结果重新提取指标；`--curve` 同时输出采样的导纳数组 |
+| `sawsim plot <目录或参考文件>... -o 图.png` | 多条导纳曲线叠加成一张图，标出 fr（虚线）与 fa（点线），图例自动取各次计算不同的参数；可叠加参考 CSV / npz |
 
 `<cfg>` 可以是 JSON 文件路径，也可以是以 `{` 开头的内联 JSON；`--set key=value` 覆盖单个字段。
 退出码 0 表示成功，1 表示 JSON 里 `"ok": false` 并附 `error`/`errors`。进度信息只写 stderr。
@@ -58,7 +59,8 @@ sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.
 | `modes` | 频带内其他谐振峰（例如主 SH 模旁的 Rayleigh 杂散） |
 | `warnings` | `peak_at_band_edge`、`antiresonance_not_found`、`coarse_sampling`、`multiple_modes` |
 | `next_steps` | 基于警告的下一步建议 |
-| `artifacts` | Y11.png、网格图、位移/电势场图、admittance.csv 的路径 |
+| `artifacts` | Y11.png、网格图、位移/电势场图、admittance.csv（频率、Re、Im、\|Y\|）的路径 |
+| `coarse`（仅 `locate`） | 全频带粗扫的结果目录与频带；顶层结果是 fr–fa 附近的细扫 |
 | `q_r`, `q_a` | 恒为 null：求解模型无损，谐振是极点 |
 
 ## 精度参考
