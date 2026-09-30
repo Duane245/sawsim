@@ -94,4 +94,16 @@ The Python package `sawsim` is released under **AGPL-3.0-or-later** (it links th
 
 ## Citation
 
+Author: Shaoqing Duan.
+
 To cite a specific version use its version DOI (v2.0.0: [10.5281/zenodo.22728471](https://doi.org/10.5281/zenodo.22728471)); to cite the project as a whole use the concept DOI [10.5281/zenodo.20362278](https://doi.org/10.5281/zenodo.20362278), which always resolves to the latest version. See [CITATION.cff](https://github.com/Duane245/sawsim/blob/main/CITATION.cff) for the format.
+
+```bibtex
+@software{duan_sawsim,
+  author    = {Duan, Shaoqing},
+  title     = {{SawSim: An open-source piezoelectric finite-element solver for SAW resonators}},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.20362278},
+  url       = {https://github.com/Duane245/sawsim}
+}
+```

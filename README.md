@@ -94,5 +94,17 @@ Python 包 `sawsim` 以 **AGPL-3.0-or-later** 发布（它通过 Python API 链�
 
 ## 引用
 
+作者：Shaoqing Duan。
+
 引用具体版本请用版本 DOI（v2.0.0：[10.5281/zenodo.22728471](https://doi.org/10.5281/zenodo.22728471)）；引用项目整体请用概念 DOI [10.5281/zenodo.20362278](https://doi.org/10.5281/zenodo.20362278)，它始终指向最新版本。格式见 [CITATION.cff](https://github.com/Duane245/sawsim/blob/main/CITATION.cff)。
+
+```bibtex
+@software{duan_sawsim,
+  author    = {Duan, Shaoqing},
+  title     = {{SawSim: An open-source piezoelectric finite-element solver for SAW resonators}},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.20362278},
+  url       = {https://github.com/Duane245/sawsim}
+}
+```
 
