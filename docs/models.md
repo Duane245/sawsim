@@ -30,6 +30,7 @@
 | `mesh_um` | 网格控制尺寸 | 0.5（TC 0.1，Hex27 0.2 – 0.217） |
 | `start_ghz`, `stop_ghz`, `points` | 频段与频点数（3 – 401） | 模板决定，41 点 |
 | `voltage` | 激励电压 | 1 |
+| `beta_dk`, `eta_eps` | 损耗（二维模板，仅压电层及其 PML，与参考有限元模型一致）：Rayleigh 刚度阻尼 K_uu(1 + i·beta_dk·ω)，介电损耗 ε(1 − i·eta_eps) | 0（无损） |
 | `mode_extension` | 0 = ME0，1 = ME1 | 1（TC-SAW 仅 0） |
 | `substrate_material`, `electrode_material` | 材料 id | `sp_baseline`, `al`（TC：`linbo3_tc`, `cu`） |
 | `euler_phi_deg`, `euler_theta_deg`, `euler_psi_deg` | 主压电层 ZXZ 欧拉角 | 见材料文档 |

@@ -42,6 +42,45 @@ Exit code 0 = success, 1 = `"ok": false` with `error`/`errors` in the JSON. Prog
 
 Runs are cached by config hash in `$SAWSIM_RUNS_DIR` (default `./sawsim_runs`); an identical config returns immediately.
 
+## MCP server (local)
+
+`sawsim mcp` is a local MCP server shipped with the package: the AI client starts it as a subprocess on this
+machine (stdio); nothing is uploaded and everything is computed locally; unit-cell models only (no HCT). It suits
+clients without a terminal (Claude Desktop, Cursor) and also works with Claude Code / codex.
+
+| client | configuration |
+|---|---|
+| Claude Code | `claude mcp add sawsim -- sawsim mcp` |
+| Claude Desktop | add the snippet printed by `sawsim mcp --print-config claude-desktop` to `claude_desktop_config.json` |
+| codex | add the snippet printed by `sawsim mcp --print-config codex` to `~/.codex/config.toml` |
+| others (Cursor, …) | command `sawsim`, args `mcp` (stdio) |
+
+`--print-config` writes the absolute path of the sawsim executable so the client always finds it (needed on Windows).
+For long computations raise the client's tool timeout to a few minutes (codex: `tool_timeout_sec`).
+
+Tools: `get_guide`, `list_templates`, `describe_template`, `list_materials`, `show_material`, `create_material`,
+`validate_config`, `run_sweep`, `locate_resonance`, `check_convergence`, `scan_parameter`, `summarize_result`,
+`plot_curves` (returns the image), `compare_with_reference` — one-to-one with the JSON commands above. Results are
+cached in `$SAWSIM_RUNS_DIR` (default `~/.sawsim/runs`); figures go to `~/.sawsim/plots/` by default.
+
+## Loss and Q
+
+Lossless by default. Loss follows the reference FEM models and acts **on the piezoelectric layer (and its PML) only**;
+electrodes and other layers stay lossless (2D templates; 2.5D not yet):
+- `beta_dk` (s): Rayleigh stiffness damping, K_uu → K_uu(1 + i·beta_dk·ω), β_dK of the reference models (mass damping 0); the equivalent
+  loss factor grows linearly with frequency;
+- `eta_eps`: dielectric loss, ε → ε(1 − i·eta_eps), η_εS of the reference models.
+
+Values in the reference models: TC-SAW β_dK = 1e-13, η_εS = 1.5e-3; IHP-SAW β_dK = 3e-14, η_εS = 1.5e-3.
+With loss, `locate` adds narrow sweeps around fr and fa until the linewidth is resolved by ~40 samples and reports `q_r`
+(3 dB width of |Y|²) and `q_a` (|Z|²), with the half-power interpolation bias removed by Richardson extrapolation; fr/fa are
+refined to the peaks; lossless runs report Q as null. `converge` also reports the relative Q change. The admittance uses
+the passive sign (Re Y ≥ 0).
+
+Example: `sp_tcsaw` defaults with beta_dk = 1e-13, eta_eps = 1.5e-3 give Q_r = 1639.2, Q_a = 1651.8; a 401-point
+brute-force sweep gives Q_r = 1639.1. This Q contains material loss and substrate radiation only — no electrode resistance,
+finite aperture, bus bars or package.
+
 ## Generic stacks and custom materials
 
 - **`sp_stack`**: 0–6 backing `layers` under the piezo layer, 0–3 `coatings` over the electrodes, pitch 0.1–20 µm, 0.02–20 GHz.
@@ -55,14 +94,14 @@ Runs are cached by config hash in `$SAWSIM_RUNS_DIR` (default `./sawsim_runs`); 
 | field | meaning |
 |---|---|
 | `fr_ghz`, `fa_ghz` | \|Y\| maximum and the following minimum, refined between samples by a V-fit |
-| `k2eff` | π²/4 · (fa − fr)/fa (a fraction, not %), same as the web UI |
+| `k2eff` | π²/4 · (fa − fr)/fa (a fraction, not %) |
 | `uncertainty_mhz` | half the frequency step, conservative; the V-fit is usually much better |
 | `modes` | other in-band peaks (e.g. a Rayleigh spurious next to the SH main mode) |
 | `warnings` | `peak_at_band_edge`, `antiresonance_not_found`, `coarse_sampling`, `multiple_modes` |
 | `next_steps` | suggestions derived from the warnings |
 | `artifacts` | paths of Y11.png, mesh plot, displacement/potential field plots, admittance.csv (frequency, Re, Im, \|Y\|) |
 | `coarse` (`locate` only) | the full-band coarse sweep (directory and band); the top-level result is the zoom around fr–fa |
-| `q_r`, `q_a` | always null: the solver model is lossless, resonances are poles |
+| `q_r`, `q_a` | 3 dB quality factors at fr / fa; given by `locate` when loss is set, null for lossless runs |
 
 ## Accuracy
 
@@ -100,4 +139,9 @@ agents, saying only "sawsim is installed" - no field names, no reference results
 - codex: 9.4 min, ~70 sawsim calls. Claude (remote over ssh): 16 min, 25 calls. Both reached the B2 target in 3 secant steps.
 - In A2/A3, refining the mesh from 0.5 to 0.25 um moves fr by ~0.5 MHz; the deviations above include that.
 - Issues the agents raised were fixed or documented: a cache race between concurrent identical runs (fixed, with a test); the TC-SAW SiO2 thickness is measured from the piezo surface; the 2D templates' bottom PML uses the piezo material; `converge` clamps the mesh to the template minimum.
+- **MCP acceptance (2026-10-01)**: codex solved A1, B2, B3 through the `sawsim mcp` tools only (no sawsim command in its shell):
+  26 tool calls, 16 min; it called `get_guide` first, hit the B2 target in 3 secant steps (0.97304 um, +0.09 MHz) and answered B3
+  (+0.30 pp) with a `plot_curves` figure. The original A1 wording ("SiO2 721.44 nm over the electrodes") was ambiguous: the main answer
+  used "above the electrode top" (fr 1.75227 GHz) and also reported the "from the piezo surface" reading, 1.75879 GHz (0.12 MHz from
+  the reference); the task text is now explicit. Finite Q values from dense sweeps of the lossless model are no longer reported.
 

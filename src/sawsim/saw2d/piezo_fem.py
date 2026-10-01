@@ -108,7 +108,7 @@ def _q9_shapes(xi, eta):
 # ---------------------------------------------------------------------------
 def _C9(C: np.ndarray) -> np.ndarray:
     """6x6 刚度矩阵扩展为 9x9（对应 ``[C, C(:,4:6); C(4:6,:), C(4:6,4:6)]``）。"""
-    C9 = np.zeros((9, 9))
+    C9 = np.zeros((9, 9), dtype=np.result_type(C, float))
     C9[:6, :6] = C
     C9[:6, 6:9] = C[:6, 3:6]
     C9[6:9, :6] = C[3:6, :6]
@@ -118,7 +118,7 @@ def _C9(C: np.ndarray) -> np.ndarray:
 
 def _e9(e: np.ndarray) -> np.ndarray:
     """3x6 压电矩阵扩展为 3x9（对应 ``[e, e(:,4:6)]``）。"""
-    e9 = np.zeros((3, 9))
+    e9 = np.zeros((3, 9), dtype=np.result_type(e, float))
     e9[:, :6] = e
     e9[:, 6:9] = e[:, 3:6]
     return e9

@@ -65,6 +65,9 @@ def build_sp_family(config):
     is_tc=config.model_id=='sp_tcsaw' or (config.model_id=='sp_stack' and config.substrate_material=='linbo3_tc')
     project=materials.project_xz_plane_strain if is_tc else materials.project_xy_plane_strain
     active=chosen if config.mode_extension else [project(m) for m in chosen]
+    if config.eta_eps:
+        # Dielectric loss on the piezoelectric material only (passive with the port sign in solver.py).
+        active=[materials.Material(m.rho,m.C,m.e,m.eps*(1-1j*config.eta_eps)) if i==0 else m for i,m in enumerate(active)]
     strain=[0,2,4] if is_tc else [0,1,5]
     electric=[0,2] if is_tc else [0,1]
     ndisp=3 if config.mode_extension else 2
@@ -100,7 +103,7 @@ def build_sp_family(config):
         coatings=[layer.model_dump() for layer in config.coatings],layer_role=spec['layer_role'],layer_tags=info['layer_tags'],coordinate_note=info.get('coordinate_note',''),
         tensor_plane='xz mapped to local mesh xy' if is_tc else 'xy',
         source_component_labels=['ux','uz'] if is_tc else ['ux','uy','uz'][:ndisp],
-        mesh_info=info)
+        loss=dict(beta_dk=config.beta_dk,eta_eps=config.eta_eps,scope='piezoelectric layer and its PML'),mesh_info=info)
     return BuiltModel(model=model,materials=active,material_indices=piezo_fem.material_index(model,info['tag_map']),
         pml_regions=pml,boundary_conditions=sweep.bc_periodic(model,msh.LINES3,ndisp=ndisp),
         details=details,material_data=tensor_data,displacement_components=ndisp)

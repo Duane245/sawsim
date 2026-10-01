@@ -120,7 +120,7 @@ def cmd_summarize(args):
 
 def cmd_locate(args):
     from sawsim import agent
-    return _call(agent.locate, _config(args), zoom_points=args.points, on_progress=_progress(args.quiet))
+    return _call(agent.locate, _config(args), zoom_points=args.points, with_q=args.q, on_progress=_progress(args.quiet))
 
 
 def cmd_scan(args):
@@ -187,9 +187,25 @@ def cmd_plot(args):
     return _call(agent.plot, args.inputs, args.output, labels=labels, quantity=args.quantity, mark=not args.no_marks)
 
 
+def cmd_mcp(args):
+    """Run the local MCP server on stdio, or print client configuration snippets."""
+    if args.print_config:
+        import shutil
+        exe = shutil.which("sawsim") or sys.argv[0]
+        if args.print_config == "claude-code":
+            print(f"claude mcp add sawsim -- {exe} mcp")
+        elif args.print_config == "claude-desktop":
+            print(json.dumps({"mcpServers": {"sawsim": {"command": exe, "args": ["mcp"]}}}, indent=2))
+        else:
+            print('[mcp_servers.sawsim]\ncommand = %s\nargs = ["mcp"]' % json.dumps(exe))
+        return 0
+    from sawsim.mcp_server import serve
+    return serve()
+
+
 def cmd_serve(args):
-    print("`sawsim serve` (local web UI) ships with the web extra in a later step; run the API with:\n"
-          "  python -m uvicorn sawsim_web.app:app --port 8765", file=sys.stderr)
+    print("`sawsim serve` (a local graphical interface) is not available yet; use the command line, "
+          "the Python API or `sawsim mcp`.", file=sys.stderr)
     return 2
 
 
@@ -245,6 +261,8 @@ def main(argv=None):
 
     lo = sub.add_parser("locate", help="[JSON] coarse sweep, bracket fr/fa, then a zoomed sweep around them")
     config_args(lo); lo.add_argument("--points", type=int, default=101, help="points of the zoomed sweep")
+    lo.add_argument("--q", dest="q", action="store_true", default=None, help="resolve Q_r/Q_a (default: when beta_dk/eta_eps > 0)")
+    lo.add_argument("--no-q", dest="q", action="store_false", help="skip the Q windows")
     lo.set_defaults(fn=cmd_locate)
 
     sc = sub.add_parser("scan", help="[JSON] one sweep per value of a parameter")
@@ -268,7 +286,12 @@ def main(argv=None):
                         "or ~/.codex/AGENTS.md); re-running replaces it")
     g.set_defaults(fn=cmd_guide)
 
-    se = sub.add_parser("serve", help="start the local web UI"); se.set_defaults(fn=cmd_serve)
+    mc = sub.add_parser("mcp", help="run the local MCP server on stdio (started by an AI client)")
+    mc.add_argument("--print-config", choices=["claude-code", "claude-desktop", "codex"],
+                    help="print the client configuration snippet instead of serving")
+    mc.set_defaults(fn=cmd_mcp)
+
+    se = sub.add_parser("serve", help="local graphical interface (not available yet)"); se.set_defaults(fn=cmd_serve)
     args = p.parse_args(argv)
     return args.fn(args)
 

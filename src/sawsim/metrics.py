@@ -3,7 +3,7 @@
 fr = |Y| maximum, fa = following |Y| minimum.  Both are refined between samples
 with a V-fit (exact for an isolated lossless pole/zero on a smooth background),
 so the reported uncertainty is half a frequency step.
-k2eff = pi^2/4 * (fa - fr) / fa  (same estimate as the web UI).
+k2eff = pi^2/4 * (fa - fr) / fa.
 """
 from __future__ import annotations
 
@@ -32,13 +32,62 @@ def _local_extrema(y, maxima=True):
     return np.flatnonzero((s[1:-1] > s[:-2]) & (s[1:-1] >= s[2:])) + 1
 
 
+MIN_SAMPLES_IN_LINEWIDTH = 8   # a 3 dB width spanning fewer samples is a sampling artefact, not a Q
+
+
+def peak_quality(f, power):
+    """Q of the highest peak of `power` (|Y|^2 for fr, |Z|^2 for fa) in a window that resolves it.
+
+    Peak: parabola through the top three samples. Half-power points: linear interpolation
+    of power. Returns None when a half-power crossing lies outside the window.
+    """
+    f = np.asarray(f, dtype=float)
+    p = np.asarray(power, dtype=float)
+    i = int(np.argmax(p))
+    if i in (0, len(p) - 1):
+        return None
+    y0, y1, y2 = p[i - 1], p[i], p[i + 1]
+    den = y0 - 2 * y1 + y2
+    shift = 0.5 * (y0 - y2) / den if den < 0 else 0.0
+    h = f[i + 1] - f[i]
+    f0 = f[i] + np.clip(shift, -0.5, 0.5) * h
+    peak = y1 - 0.25 * (y0 - y2) * np.clip(shift, -0.5, 0.5)
+    half = peak / 2
+    left = [j for j in range(i, 0, -1) if p[j - 1] <= half < p[j]]
+    right = [j for j in range(i, len(p) - 1) if p[j + 1] <= half < p[j]]
+    if not left or not right:
+        return None
+    a, b = left[0], right[0]
+    fl = f[a - 1] + (half - p[a - 1]) / (p[a] - p[a - 1]) * (f[a] - f[a - 1])
+    fh = f[b] + (p[b] - half) / (p[b] - p[b + 1]) * (f[b + 1] - f[b])
+    return dict(f0_hz=float(f0), fl_hz=float(fl), fh_hz=float(fh), q=float(f0 / (fh - fl)),
+                samples_in_linewidth=int(b - a + 1), step_hz=float(h))
+
+
+def peak_quality_extrapolated(f, power):
+    """peak_quality with the linear-interpolation bias removed.
+
+    The half-power interpolation error scales as 1/n^2 (n = samples per linewidth), so combining the
+    full sampling with every other sample (both offsets averaged) gives Q = Q_n + (Q_n - Q_n/2) / 3.
+    """
+    full = peak_quality(f, power)
+    if full is None:
+        return None
+    halves = [peak_quality(np.asarray(f)[k::2], np.asarray(power)[k::2]) for k in (0, 1)]
+    halves = [h['q'] for h in halves if h]
+    if not halves:
+        return dict(full, q_linear=full['q'], q_half=None)
+    q_half = float(np.mean(halves))
+    return dict(full, q=full['q'] + (full['q'] - q_half) / 3, q_linear=full['q'], q_half=q_half)
+
+
 def _half_power_q(f, mag, i, lo, hi):
-    """3 dB Q around a peak of `mag` at index i, searched inside [lo, hi]; None if unresolved."""
+    """3 dB Q around a peak of `mag` at index i, searched inside [lo, hi]; None unless well resolved."""
     p = mag ** 2
     half = p[i] / 2
     left = [j for j in range(i - 1, lo - 1, -1) if p[j] <= half]
     right = [j for j in range(i + 1, hi + 1) if p[j] <= half]
-    if not left or not right or right[0] - left[0] < 4:
+    if not left or not right or right[0] - left[0] < MIN_SAMPLES_IN_LINEWIDTH:
         return None
     a, b = left[0], right[0]
     fl = np.interp(half, [p[a], p[a + 1]], [f[a], f[a + 1]])
@@ -109,8 +158,8 @@ def resonances(frequency_hz, admittance, max_modes: int = 5) -> dict:
         out['warnings'].append('stronger_response_at_band_edge: |Y|/f at a band edge exceeds the main peak; '
                                'a stronger resonance may lie just outside the band')
     if out['q_r'] is None:
-        out['notes'].append('Q not resolved at this frequency step (expected: the solver model is lossless, '
-                            'so resonances are poles); q_r/q_a are null')
+        out['notes'].append('Q not resolved at this frequency step (3 dB width spans < %d samples); q_r/q_a are '
+                            'null - locate with beta_dk/eta_eps > 0 resolves Q' % MIN_SAMPLES_IN_LINEWIDTH)
     for s, p, q, _ in sorted(pairs, key=lambda t: (min(t[0], 0.5), g[t[1]]), reverse=True)[:max_modes]:
         out['modes'].append(dict(fr_ghz=_vfit(f, inv, p) * 1e-9,
                                  fa_ghz=_vfit(f, g, q) * 1e-9 if q != n - 1 else None,

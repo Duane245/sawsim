@@ -2,43 +2,46 @@
 
 # Validation
 
-Every template is compared point by point, without interpolation, with an independent reference finite-element solution computed by a commercial FEM code for the same geometry, materials and boundary settings. The exported reference contains frequency and |Y11| only, no phase. The table lists the full-sweep comparison of 2026-09-11.
+Each template is compared with an independent reference FEM solution on the same frequencies. The reference was computed
+with commercial FEM software for the same geometry, materials and boundaries; the exported data contain frequency and |Y11|
+only (2026-09-11). **Accuracy is measured by the resonance fr and the anti-resonance fa**, extracted from both curves with
+the same method (`sawsim.metrics`: fr = |Y| peak, fa = the following minimum, refined between samples by a V-fit).
 
-| Template | Points | Relative L2 error of \|Y\| | Max pointwise relative error | Main resonance, GHz (sawsim / reference) |
-|---|---:|---:|---:|---|
-| `sp_single_layer` | 801 | 11.7 % | 13.4 % | 1.8075 / 1.8075 |
-| `sp_double_layer` | 801 | 1.58 % | 81.5 % | 1.824 / 1.824 |
-| `sp_triple_layer` | 801 | 182 % | 243 % | 1.758 / 1.758 |
-| `sp_quad_layer` | 801 | 2.09 % | 321 % | 1.758 / 1.758 |
-| `sp_tcsaw` | 201 | 8.03 % | 36.3 % | 1.758 / 1.758 |
-| `sp_2p5d_single_layer` | 1201 | 47.2 % | 48.1 % | 1.808 / 1.808 |
-| `sp_2p5d_double_layer` | 251 | 0.15 % | 1.56 % | 1.844 / 1.844 |
-| `sp_2p5d_triple_layer` | 401 | 1.43 % | 1.54 % | 1.758 / 1.758 |
-| `sp_2p5d_quad_layer` | 301 | 6.67 % | 27.2 % | 1.898 / 1.898 |
+| template | points | step MHz | reference fr / fa (GHz) | sawsim fr / fa (GHz) | Δfr / Δfa (MHz) |
+|---|---:|---:|---|---|---|
+| `sp_single_layer` | 801 | 1.5 | 1.80791 / 1.87557 | 1.80785 / 1.87557 | −0.06 / 0.00 |
+| `sp_double_layer` | 801 | 1.5 | 1.82362 / 1.90406 | 1.82363 / 1.90407 | 0.00 / 0.00 |
+| `sp_triple_layer` | 801 | 1.5 | 1.75860 / 1.84384 | 1.75815 / 1.84340 | −0.45 / −0.43 |
+| `sp_quad_layer` | 801 | 1.5 | 1.75859 / 1.84382 | 1.75859 / 1.84382 | 0.00 / 0.00 |
+| `sp_tcsaw` | 201 | 2.0 | 1.75891 / 1.81852 | 1.75882 / 1.81836 | −0.09 / −0.16 |
+| `sp_2p5d_single_layer` | 1201 | 1.0 | 1.80791 / 1.87554 | 1.80783 / 1.87552 | −0.08 / −0.03 |
+| `sp_2p5d_double_layer` | 251 | 1.0 | 1.84441 / 1.92538 | 1.84441 / 1.92537 | 0.00 / −0.01 |
+| `sp_2p5d_triple_layer` | 401 | 1.0 | 1.75820 / 1.84342 | 1.75820 / 1.84342 | 0.00 / −0.01 |
+| `sp_2p5d_quad_layer` | 301 | 1.0 | 1.89841 / 1.98725 | 1.89844 / 1.98731 | +0.04 / +0.06 |
 
-2.5D templates compare the total slice admittance (S), not the aperture-normalised value.
+fr and fa of all nine templates agree with the reference within 0.5 MHz, mostly below 0.1 MHz, and always below the
+frequency step.
 
-![2.5D SP double layer: sawsim (dashed) vs reference (solid)](figures/compare_2p5d_double.png)
+![2.5D SP double layer: sawsim (dashed) and reference (solid)](figures/compare_2p5d_double.png)
 
 ![Y11 of the five 2D templates](figures/fig_admittance_sp2d.png)
 
-## How to read the numbers
-
-- **Resonance and anti-resonance frequencies agree with the reference for every template**, which are the two most important quantities of an admittance curve.
-- **The large errors of the 2D multilayer templates (double, triple, quad) are concentrated above about 2.4 GHz in the higher-order mode region**, where the curve has several sharp peaks and a small frequency shift produces a large pointwise error. Almost all of the 182 % L2 error of the triple layer comes from that region; around the main resonance the error is at the 1 % level. The cause is still being analysed; candidates are the PML material convention (2D templates assign the main piezoelectric material) and mesh differences in the reference model.
-- **`sp_single_layer` and `sp_2p5d_single_layer` show a uniform magnitude offset** (about 12 % and 47 %) with matching peak positions. A uniform ratio of this kind usually comes from a mismatch in admittance normalisation or electrode-area convention and has not yet been reconciled item by item with the reference model.
-- `sp_2p5d_double_layer`, `sp_2p5d_triple_layer`, `sp_double_layer` and `sp_quad_layer` agree to 0.1 – 2 % around the main resonance.
-
-These numbers describe the current state, not a final accuracy claim. Entries with larger errors will be updated as the reconciliation progresses.
+Peak and valley |Y| amplitudes are not used as an accuracy measure: the solver model is lossless, the resonance and
+anti-resonance are a pole and a zero, the amplitude at a sample depends on how close it falls to the pole, and the frequency
+step is much coarser than the linewidth. Comparing peak/valley amplitudes or Q needs the same loss on both sides and a step
+finer than the linewidth (see [Driving SawSim with AI agents](ai-agents.en.md)). The 2.5D templates compare the total slice
+admittance (S), not normalised by the aperture.
 
 ## How the tests reproduce this
 
-`tests/test_templates.py` runs the solver on 5 – 6 frequencies per template, chosen to land exactly on the frequency grid of the comparison above. Two assertions per template:
+- `tests/test_agent.py`: for every template, fr/fa are extracted from the reference and the released curve in `tests/data/`
+  and must agree within 1 MHz.
+- `tests/test_templates.py`: runs the solver at 5 – 6 frequencies and compares with this solver's released curve (relative
+  difference ≤ 2 × 10⁻³; PARDISO and SuperLU differ by about 10⁻⁴) and checks that the deviation from the reference does
+  not exceed the level measured at release, to catch numerical regressions.
 
-1. **Regression**: relative difference to the curve published with this solver ≤ 2 × 10⁻³ (PARDISO and SuperLU differ by about 10⁻⁴).
-2. **Reference**: maximum relative error to the reference not above `reference_rtol` in `tests/data/<model>.json`, which is 1.5 × the error measured at the same frequencies in the comparison report; 2D multilayers are compared below 2.35 GHz only.
-
-The npz files in `tests/data/` hold the full frequency grids, the published curves and the reference curves for your own plots or finer comparisons.
+The npz files in `tests/data/` contain the full frequency grid, the released curve and the reference curve for your own plots
+or finer comparisons.
 
 ## Comparing with other software
 

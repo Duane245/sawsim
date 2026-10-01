@@ -48,5 +48,5 @@
  "reference_rtol": 0.01500513172518684,
  "regression_rtol": 0.002,
  "compare_raw_slice_admittance": false,
- "source": "saw_web_sp production comparison 2026-09-11, job dc16fc8c83f14add98ee0861b7ac1b15"
+ "source": "reference comparison 2026-09-11"
 }

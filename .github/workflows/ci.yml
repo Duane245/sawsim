@@ -22,6 +22,6 @@ jobs:
         run: pip install -e ".[dev]"
       - name: 2D templates and API
         run: pytest -q
-      - name: Hex27 templates (2.5D)
+      - name: Hex27 templates (2.5D) and lossy Q
         if: matrix.python == '3.11'
-        run: SAWSIM_TEST_ALL=1 pytest -q tests/test_templates.py -k 2p5d
+        run: SAWSIM_TEST_ALL=1 pytest -q tests/test_templates.py tests/test_quality.py -k "2p5d or tcsaw"

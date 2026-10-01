@@ -10,7 +10,7 @@ from an independent reference or a hidden answer (see `docs/ai-agents.md`).
 
 **A1 TC-SAW**
 > 用 sawsim 计算一个温度补偿型 SAW 谐振器的周期单元：LiNbO₃ 衬底（TC-SAW 常用的 128°Y-X 切，厚 15.9488 µm），
-> Cu 电极厚 166.33 nm，电极周期 0.9968 µm，金属化比 0.46；电极上方依次覆盖 SiO₂ 721.44 nm 和 SiN 40 nm。
+> Cu 电极厚 166.33 nm，电极周期 0.9968 µm，金属化比 0.46；表面覆盖 SiO₂（自压电表面起算总厚 721.44 nm，包埋电极），其上再覆盖 SiN 40 nm。
 > 给出谐振频率 fr、反谐振频率 fa 和 k²eff，并说明你做了哪些假设。
 
 **A2 LiTaO₃ thin film on Si / 键合薄膜**

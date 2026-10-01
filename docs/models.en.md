@@ -29,7 +29,8 @@ Ten single-period (SP) unit-cell templates; `sp_stack` is a generic 2D stack wit
 | `coatings` | `sp_stack` only: layers over the electrodes, inside-out; the first is measured from the piezo surface, embeds the electrodes and must be thicker than them | `[]` |
 | `mesh_um` | Mesh size control | 0.5 (TC 0.1, Hex27 0.2 – 0.217) |
 | `start_ghz`, `stop_ghz`, `points` | Band and number of points (3 – 401) | template, 41 points |
-| `voltage` | Drive voltage | 1 |
+| `voltage` | drive voltage | 1 |
+| `beta_dk`, `eta_eps` | loss (2D templates, piezoelectric layer and its PML only, as in the reference FEM models): Rayleigh stiffness damping K_uu(1 + i·beta_dk·ω), dielectric loss ε(1 − i·eta_eps) | 0 (lossless) |
 | `mode_extension` | 0 = ME0, 1 = ME1 | 1 (TC-SAW: 0 only) |
 | `substrate_material`, `electrode_material` | Material ids | `sp_baseline`, `al` (TC: `linbo3_tc`, `cu`) |
 | `euler_phi_deg`, `euler_theta_deg`, `euler_psi_deg` | ZXZ Euler angles of the main piezo layer | see materials doc |

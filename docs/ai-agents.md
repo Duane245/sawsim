@@ -41,6 +41,40 @@ sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.
 
 结果按配置哈希缓存在 `$SAWSIM_RUNS_DIR`（默认 `./sawsim_runs`），重复提交相同配置直接返回，不重算。
 
+## MCP 服务（本地）
+
+`sawsim mcp` 是随包安装的本地 MCP 服务：由 AI 客户端在本机以子进程启动（stdio），不联网、不上传，
+计算在本机完成；只含单周期模型（无 HCT）。适合 Claude 桌面版、Cursor 等没有终端的客户端，也可供 Claude Code / codex 使用。
+
+| 客户端 | 配置 |
+|---|---|
+| Claude Code | `claude mcp add sawsim -- sawsim mcp` |
+| Claude 桌面版 | `claude_desktop_config.json` 中加入 `sawsim mcp --print-config claude-desktop` 打印的片段 |
+| codex | `~/.codex/config.toml` 中加入 `sawsim mcp --print-config codex` 打印的片段 |
+| 其他（Cursor 等） | 命令 `sawsim`，参数 `mcp`（stdio） |
+
+`--print-config` 会写入 sawsim 可执行文件的绝对路径，避免客户端找不到命令（Windows 上尤其需要）。
+长计算建议把客户端的工具超时调到数分钟（codex：`tool_timeout_sec`）。
+
+工具：`get_guide`、`list_templates`、`describe_template`、`list_materials`、`show_material`、`create_material`、
+`validate_config`、`run_sweep`、`locate_resonance`、`check_convergence`、`scan_parameter`、`summarize_result`、
+`plot_curves`（返回图像）、`compare_with_reference`，与上面的 JSON 命令一一对应；结果缓存在 `$SAWSIM_RUNS_DIR`
+（默认 `~/.sawsim/runs`），图默认存到 `~/.sawsim/plots/`。
+
+## 损耗与 Q
+
+默认无损。损耗与参考有限元模型一致，**只作用于压电层（含其 PML）**，电极与其他层保持无损（二维模板；2.5D 暂不支持）：
+- `beta_dk`（s）：Rayleigh 刚度阻尼，K_uu → K_uu(1 + i·beta_dk·ω)，即参考模型中的 β_dK（质量阻尼为 0），等效损耗因子随频率线性增大；
+- `eta_eps`：介电损耗，ε → ε(1 − i·eta_eps)，即参考模型中的 η_εS。
+
+参考模型的取值：TC-SAW β_dK = 1e-13、η_εS = 1.5e-3；IHP-SAW β_dK = 3e-14、η_εS = 1.5e-3。
+设置损耗后 `locate` 在 fr、fa 附近追加窄带扫描，线宽被约 40 个采样点分辨后按 3 dB 带宽给出 `q_r`（|Y|²）与 `q_a`（|Z|²），
+半功率点插值偏差用 Richardson 外推消除，fr/fa 同时细化到峰值；无损时 Q 为 null。`converge` 一并报告 Q 的相对变化。
+导纳采用被动符号（Re Y ≥ 0）。
+
+示例：`sp_tcsaw` 默认几何、beta_dk = 1e-13、eta_eps = 1.5e-3 时 Q_r = 1639.2、Q_a = 1651.8；401 点暴力扫描得 Q_r = 1639.1。
+该 Q 只含材料损耗与衬底辐射，不含电极电阻、有限孔径、汇流条与封装。
+
 ## 通用叠层与自定义材料
 
 - **`sp_stack`**：压电层下 0–6 层背衬（`layers`），电极上 0–3 层覆盖（`coatings`），节距 0.1–20 µm、频率 0.02–20 GHz。
@@ -54,14 +88,14 @@ sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.
 | 字段 | 含义 |
 |---|---|
 | `fr_ghz`, `fa_ghz` | \|Y\| 最大点与其后的最小点，采样点之间用 V 形拟合细化 |
-| `k2eff` | π²/4 · (fa − fr)/fa（小数，不是百分数），与网页端一致 |
+| `k2eff` | π²/4 · (fa − fr)/fa（小数，不是百分数） |
 | `uncertainty_mhz` | 半个频率步长，偏保守；V 形拟合通常远好于此 |
 | `modes` | 频带内其他谐振峰（例如主 SH 模旁的 Rayleigh 杂散） |
 | `warnings` | `peak_at_band_edge`、`antiresonance_not_found`、`coarse_sampling`、`multiple_modes` |
 | `next_steps` | 基于警告的下一步建议 |
 | `artifacts` | Y11.png、网格图、位移/电势场图、admittance.csv（频率、Re、Im、\|Y\|）的路径 |
 | `coarse`（仅 `locate`） | 全频带粗扫的结果目录与频带；顶层结果是 fr–fa 附近的细扫 |
-| `q_r`, `q_a` | 恒为 null：求解模型无损，谐振是极点 |
+| `q_r`, `q_a` | 谐振 / 反谐振的 3 dB 品质因数；仅在设置损耗后由 `locate` 给出，无损时为 null |
 
 ## 精度参考
 
@@ -99,4 +133,8 @@ sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.
 - codex 用时 9.4 分钟、调用 sawsim 约 70 次；Claude 经 ssh 远程调用，用时 16 分钟、调用 25 次。两者都用割线法 3 步命中 B2 的目标频率。
 - A2/A3 的网格从 0.5 µm 加密到 0.25 µm 后，fr 移动约 0.5 MHz。报告的偏差已包含这部分。
 - 代理指出的问题已修正或写进说明：同一配置并发运行时缓存冲突（已修复，并加了测试）；TC-SAW 的 SiO₂ 厚度从压电表面量起；2D 模板的底部 PML 用的是压电材料；`converge` 会把网格限制在模板下限。
+- **MCP 验收（2026-10-01）**：codex 只通过 `sawsim mcp` 工具（shell 中无 sawsim 命令）完成 A1、B2、B3：共 26 次工具调用、16 分钟；
+  先调用 `get_guide`，B2 用割线法 3 步命中（0.97304 µm，+0.09 MHz），B3 得 +0.30 个百分点并用 `plot_curves` 出图。
+  A1 因原题“电极上方覆盖 SiO₂ 721.44 nm”有歧义，主答案按“电极顶面以上”计算（fr 1.75227 GHz），同时给出“自压电表面起算”的结果
+  1.75879 GHz（与参考差 0.12 MHz）；题目已改为明确写法。无损模型下密扫给出的有限 Q 已改为不输出。
 

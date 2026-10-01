@@ -46,12 +46,31 @@ sawsim plot <dir1> <dir2> [reference.csv] -o compare.png [--quantity abs|db|real
 (plot both to show the whole response and the resolved resonance).
 Config can be a file path or inline JSON; `--set key=value` overrides one field.
 
+If the `sawsim` MCP server is connected, the same operations are tools (`locate_resonance`,
+`check_convergence`, `plot_curves`, …) taking the config as a JSON object; prefer them over the shell.
+
+## Loss and Q
+
+Lossless unless set. Loss follows the reference FEM models, on the **piezoelectric layer (and
+its PML) only**; electrodes and other layers stay lossless (2D templates; 2.5D not yet):
+- `beta_dk` [s]: Rayleigh stiffness damping, K_uu -> K_uu(1 + i beta_dk w) (beta_dK; mass
+  damping 0). Equivalent loss factor beta_dk * w grows with frequency.
+- `eta_eps`: dielectric loss, eps -> eps(1 - i eta_eps) (eta_epsilonS).
+Values used in the reference models: TC-SAW beta_dk = 1e-13, eta_eps = 1.5e-3; IHP-SAW
+beta_dk = 3e-14, eta_eps = 1.5e-3. Ask for or state the values; do not invent them.
+With loss, `locate` also returns `q_r` (3 dB width of |Y|^2 at fr) and `q_a` (|Z|^2 at fa), resolved
+on extra windows (~40 samples per linewidth, interpolation bias extrapolated away), and refines
+fr/fa to the peaks; lossless runs report Q as null. `converge` reports the relative Q change.
+Admittance uses the passive sign (Re Y >= 0). Example: sp_tcsaw with 1e-13 / 1.5e-3 gives
+Q_r 1639.2, Q_a 1651.8 (401-point brute-force sweep: 1639.1). This Q contains material loss and
+substrate radiation only - no electrode resistance, aperture, bus bars or package.
+
 ## Output fields
 
 `fr_ghz`, `fa_ghz` (V-fit between samples), `k2eff` = pi^2/4 (fa-fr)/fa (fraction, not %),
 `uncertainty_mhz` (half the frequency step - conservative; the V-fit is usually much better),
 `modes` (other in-band peaks), `warnings`, `next_steps`, `artifacts` (Y11.png, field plots,
-admittance.csv), `dofs`, `output_dir`. `q_r`/`q_a` are null: the model is lossless.
+admittance.csv), `dofs`, `output_dir`, `q_r`/`q_a` (only with loss, see above).
 
 Warnings to act on: `peak_at_band_edge` (move/widen band), `antiresonance_not_found`
 (raise stop_ghz), `coarse_sampling` (use locate), `no_resonance_found` (weak coupling:

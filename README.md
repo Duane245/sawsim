@@ -9,6 +9,8 @@ Piezoelectric coupled FEM for SAW resonator unit cells · Q9 / Hex27 · PML · B
 
 [![CI](https://github.com/Duane245/sawsim/actions/workflows/ci.yml/badge.svg)](https://github.com/Duane245/sawsim/actions/workflows/ci.yml)
 [![DOI v2.0.0](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22728471-1682D4?logo=zenodo&logoColor=white)](https://doi.org/10.5281/zenodo.22728471)
+[![PyPI](https://img.shields.io/pypi/v/sawsim?logo=pypi&logoColor=white)](https://pypi.org/project/sawsim/)
+[![Last commit](https://img.shields.io/github/last-commit/Duane245/sawsim)](https://github.com/Duane245/sawsim/commits/main)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?logo=python&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL--3.0-blue)
 
@@ -17,6 +19,14 @@ Piezoelectric coupled FEM for SAW resonator unit cells · Q9 / Hex27 · PML · B
 </div>
 
 ---
+
+## 最新动态
+
+- **2.1.0（开发中，2026-10）**：面向 AI 代理的 JSON 命令行、使用说明与本地 MCP 服务（Claude Code、codex、Claude 桌面版、Cursor）；
+  通用叠层 `sp_stack` 与按晶系常数自定义材料；压电层材料损耗（Rayleigh 刚度阻尼 + 介电损耗）与 Q 值。
+- **2.0.2（2026-09）**：发布到 PyPI，`pip install sawsim`。
+
+完整记录见 [CHANGELOG](https://github.com/Duane245/sawsim/blob/main/CHANGELOG.md)。
 
 ## 安装与使用
 
@@ -43,6 +53,7 @@ sawsim run config.json -o out/dbl
 sawsim guide --install-claude                 # Claude Code：安装为 skill（~/.claude/skills/sawsim）
 sawsim guide --install-codex                  # codex：写入全局指令 ~/.codex/AGENTS.md
 sawsim guide                                  # 其他代理：打印完整说明
+sawsim mcp --print-config claude-desktop     # MCP（Claude 桌面版、Cursor 等）：打印配置片段
 sawsim locate '{"model_id": "sp_tcsaw"}'      # 自动定位谐振/反谐振并细扫
 sawsim converge '{"model_id": "sp_tcsaw"}'    # 网格加密检查
 ```
@@ -59,15 +70,20 @@ sawsim converge '{"model_id": "sp_tcsaw"}'    # 网格加密检查
 | **网格** | Gmsh Python API 参数化建模，二次等参单元 |
 | **求解** | 复数稀疏系统实分块，MKL PARDISO 或 SciPy SuperLU，频点多进程并行 |
 | **输出** | Y11 导纳（CSV / NPZ / JSON）、网格、位移场与电势场图、材料快照与源码哈希，任务可完整复现 |
-| **材料** | 内置 LiNbO₃（文献）、Si、SiO₂、poly-Si、Si₃N₄、Al、Cu；自定义 JSON 导入，或由晶系独立常数生成（各向同性 / 立方 / 6mm / 3m） |
+| **材料** | 内置 LiNbO₃（文献）、LiTaO₃ 型基准数据集、Si、SiO₂、poly-Si、Si₃N₄、Al、Cu；自定义 JSON 导入，或由晶系独立常数生成（各向同性 / 立方 / 6mm / 3m） |
+| **损耗与 Q** | 压电层 Rayleigh 刚度阻尼 + 介电损耗（与参考有限元模型一致），自动解析谐振 / 反谐振品质因数 Q_r / Q_a |
+| **AI 接口** | JSON 命令行（定位 fr/fa、网格收敛检查、参数扫描、出图）、Claude Code / codex 使用说明、本地 MCP 服务 |
 
 ## 验证
 
-每个模板与独立的参考有限元解逐点比对：九个模板的谐振频率 fr 与反谐振频率 fa 与参考解相差均在 0.5 MHz 以内（多数小于 0.1 MHz），主谐振区幅值误差 0.1 – 2 %，2D 多层模板在 2.4 GHz 以上高阶模态区存在偏差。完整误差表、图和说明见 [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md)。`pytest` 在 5 – 6 个频点上复现该比对。
+每个模板都与独立的参考有限元解比较：九个模板的谐振频率 fr 与反谐振频率 fa 与参考解相差均在 0.5 MHz 以内（多数小于 0.1 MHz）。无损模型的峰谷幅值对频率采样极其敏感，不作为精度指标。完整误差表、图和说明见 [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md)。`pytest` 在 5 – 6 个频点上复现该比对。
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/compare_2p5d_double.png" width="640"><br>
-<sub>2.5D SP 双层（LiTaO₃ 0.6 µm / Si 6.51 µm），251 频点。虚线 sawsim，实线参考解，幅值相对 L2 误差 0.15 %。</sub>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/readme_validation_dark.png">
+  <img alt="SawSim 与参考有限元解的比较" src="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/readme_validation_light.png" width="100%">
+</picture>
+<sub>左：TC-SAW 周期单元的导纳，SawSim（实线）与参考有限元解（圆点，每 4 个采样点显示 1 个）。右：九个模板的谐振与反谐振频率偏差。</sub>
 </div>
 
 ## 文档
@@ -75,7 +91,7 @@ sawsim converge '{"model_id": "sp_tcsaw"}'    # 网格加密检查
 - [快速开始](https://github.com/Duane245/sawsim/blob/main/docs/getting-started.md) — 安装、第一个算例、输出文件、单位
 - [模型库](https://github.com/Duane245/sawsim/blob/main/docs/models.md) — 十种模板（含通用叠层）、参数、位移模型、边界、网格分辨率与已知限制
 - [材料库与晶体取向](https://github.com/Duane245/sawsim/blob/main/docs/materials-and-orientation.md) — 内置材料、记录格式、自定义导入、ZXZ 欧拉角
-- [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md) — 与参考解的逐点比对及解读
+- [验证](https://github.com/Duane245/sawsim/blob/main/docs/validation.md) — 谐振与反谐振频率与参考解的比对
 - [用 AI 代理驱动 SawSim](https://github.com/Duane245/sawsim/blob/main/docs/ai-agents.md) — JSON 命令、输出字段、fr/fa 精度、代理验收结果
 
 ## 项目结构
@@ -90,7 +106,7 @@ matlab/            v0.x 的 MATLAB + Gmsh 实现（历史版本，MIT）
 
 ## 许可
 
-Python 包 `sawsim` 以 **AGPL-3.0-or-later** 发布（它通过 Python API 链接 GPL 许可的 Gmsh）。`matlab/` 下的历史 MATLAB 实现保持 MIT。其他授权方式请联系作者。
+Python 包 `sawsim`：**AGPL-3.0-or-later**；`matlab/` 目录：MIT。详见 [LICENSE.md](https://github.com/Duane245/sawsim/blob/main/LICENSE.md)。如需商业授权，请通过 GitHub 联系作者。
 
 ## 引用
 

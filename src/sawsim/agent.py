@@ -43,6 +43,10 @@ FIELD_DOCS = {
     'stop_ghz': 'sweep stop frequency, GHz',
     'points': 'number of frequency points (3..1201); cost is linear in points',
     'voltage': 'drive voltage, V (admittance is independent of it)',
+    'beta_dk': 'Rayleigh stiffness damping of the piezoelectric layer and its PML, K_uu -> K_uu(1 + i beta_dk w), '
+               'in s (beta_dK of the reference FEM models; e.g. 1e-13 for TC-SAW, 3e-14 for IHP-SAW); 0 = lossless. 2D templates only',
+    'eta_eps': 'dielectric loss factor of the piezoelectric material, eps -> eps(1 - i eta_eps) (eta_epsilonS of the reference models; '
+               'e.g. 1.5e-3); other materials stay lossless. 2D templates only',
 }
 
 
@@ -218,10 +222,16 @@ def summarize(result_dir, *, with_curve: bool = False) -> dict:
     f = np.asarray(curve['frequency_ghz']) * 1e9
     y = np.asarray(curve['real']) + 1j * np.asarray(curve['imag'])
     res = resonances(f, y)
+    if not (inp.get('beta_dk') or inp.get('eta_eps')):
+        # No material loss: resonances are (nearly) poles; a finite 3 dB width would be a sampling artefact.
+        res['q_r'] = res['q_a'] = None
+        res['notes'] = [n for n in res['notes'] if not n.startswith('Q not resolved')] + [
+            'lossless model (beta_dk = eta_eps = 0): Q not reported; set beta_dk / eta_eps (e.g. 1e-13 / 1.5e-3) '
+            'and use locate for a physical Q']
     units = meta.get('units', {})
     config = {k: inp.get(k) for k in ('model_id', 'mode_extension', 'substrate_material', 'electrode_material',
                                       'pitch_um', 'metal_ratio', 'electrode_um', 'substrate_um', 'mesh_um',
-                                      'start_ghz', 'stop_ghz', 'points', 'aperture_um')}
+                                      'start_ghz', 'stop_ghz', 'points', 'aperture_um', 'beta_dk', 'eta_eps')}
     config['layers'] = [(l['material_id'], l['thickness_um']) for l in inp.get('layers', [])]
     if inp.get('coatings'):
         config['coatings'] = [(l['material_id'], l['thickness_um']) for l in inp['coatings']]
@@ -313,8 +323,91 @@ def _with(config, **changes):
     return c
 
 
-def locate(config, *, zoom_points: int = 101, on_progress=None) -> dict:
-    """Coarse sweep -> find fr/fa (widening the band if needed) -> zoomed sweep around them."""
+def _band_limits(model_id):
+    from sawsim.sp_specs import MODEL_SPECS
+    lim = {fl['key']: (fl['min'], fl['max']) for fl in MODEL_SPECS[model_id]['numeric_fields']}
+    return lim['start_ghz'][0], lim['stop_ghz'][1]
+
+
+def quality(config, f_ghz: float, kind: str = 'r', width_ghz: Optional[float] = None, *, points: int = 61,
+            final_points: int = 121, max_sweeps: int = 6, on_progress=None) -> dict:
+    """Q at the resonance (kind 'r': peak of |Y|^2) or antiresonance ('a': peak of |Z|^2 = 1/|Y|^2) near f_ghz.
+
+    Coarse windows (+/-3 linewidths) re-centre and size the line until it spans >= 8 samples; a final window of
+    +/-1.5 linewidths (~40 samples per linewidth) gives Q = f_peak / (3 dB width) with the half-power
+    interpolation bias removed by Richardson extrapolation (metrics.peak_quality_extrapolated).
+    """
+    from sawsim.metrics import peak_quality, peak_quality_extrapolated
+    c = _load(config)
+    f_lo, f_hi = _band_limits(c.get('model_id', 'sp_single_layer'))
+    f0, width = float(f_ghz), float(width_ghz or f_ghz * 2e-3)
+    history = []
+
+    def window(half, n, extrapolate=False):
+        lo, hi = max(f_lo, f0 - half), min(f_hi, f0 + half)
+        s = run(_with(c, start_ghz=round(lo, 7), stop_ghz=round(hi, 7), points=int(n)), on_progress=on_progress)
+        if not s.get('ok'):
+            return s, None
+        f, y, _ = load_curve(s['output_dir'])
+        mag2 = np.abs(y) ** 2
+        power = mag2 if kind == 'r' else 1.0 / np.maximum(mag2, 1e-300)
+        pq = (peak_quality_extrapolated if extrapolate else peak_quality)(f, power)
+        history.append(dict(window_ghz=[round(lo, 7), round(hi, 7)], points=int(n),
+                            q=pq and round(pq['q'], 3), samples_in_linewidth=pq and pq['samples_in_linewidth'],
+                            output_dir=s['output_dir']))
+        return s, pq
+
+    for _ in range(max_sweeps):
+        s, pq = window(3 * width, points)
+        if not s.get('ok'):
+            return dict(ok=False, error=s.get('error') or s.get('errors'), history=history)
+        if pq is None:                       # half-power point outside the window: widen
+            width *= 3
+            continue
+        f0, width = pq['f0_hz'] * 1e-9, (pq['fh_hz'] - pq['fl_hz']) * 1e-9
+        if f0 / width > 1e6:
+            return dict(ok=True, q=None, f_ghz=f0, converged=False, history=history,
+                        note='Q > 1e6: no resolvable loss (lossless model or radiation-limited only)')
+        if pq['samples_in_linewidth'] >= 8:
+            break
+    else:
+        return dict(ok=True, q=None, f_ghz=f0, converged=False, history=history,
+                    note='linewidth not resolved within %d windows' % max_sweeps)
+    s, pq = window(1.5 * width, final_points, extrapolate=True)
+    if not s.get('ok') or pq is None:
+        return dict(ok=bool(s.get('ok')), q=None, f_ghz=f0, converged=False, history=history,
+                    note='final window failed', error=s.get('error'))
+    spread = abs(pq['q_linear'] - pq['q_half']) / pq['q'] if pq.get('q_half') else None
+    return dict(ok=True, q=pq['q'], f_ghz=pq['f0_hz'] * 1e-9, linewidth_mhz=(pq['fh_hz'] - pq['fl_hz']) * 1e-6,
+                samples_in_linewidth=pq['samples_in_linewidth'], q_linear=pq['q_linear'], q_half=pq.get('q_half'),
+                converged=spread is not None and spread < 0.01, history=history)
+
+
+def _add_quality(result, config, on_progress):
+    """Refine fr/fa and add q_r/q_a to a located result (lossy configs)."""
+    width = (result['fa_ghz'] - result['fr_ghz']) * 0.03
+    qr = quality(config, result['fr_ghz'], 'r', width, on_progress=on_progress)
+    qa = quality(config, result['fa_ghz'], 'a', width, on_progress=on_progress)
+    for key, q in (('r', qr), ('a', qa)):
+        if q.get('ok') and q.get('q'):
+            result['q_' + key] = round(q['q'], 2)
+            result['f%s_ghz' % key] = round(q['f_ghz'], 7)
+    if result.get('fr_ghz') and result.get('fa_ghz'):
+        import math
+        result['k2eff'] = round(math.pi ** 2 / 4 * (result['fa_ghz'] - result['fr_ghz']) / result['fa_ghz'], 6)
+    result['notes'] = [n for n in result.get('notes', []) if not n.startswith('Q not resolved')]
+    result['quality'] = dict(method='Q = f_peak / 3 dB width of |Y|^2 (fr) and |Z|^2 (fa); final window +/-1.5 '
+                                    'linewidths with ~40 samples per linewidth, interpolation bias removed by '
+                                    'Richardson extrapolation; fr/fa are the refined peaks',
+                             resonance=qr, antiresonance=qa)
+    return result
+
+
+def locate(config, *, zoom_points: int = 101, with_q: Optional[bool] = None, on_progress=None) -> dict:
+    """Coarse sweep -> find fr/fa (widening the band if needed) -> zoomed sweep around them.
+
+    with_q (default: when beta_dk or eta_eps > 0) adds q_r/q_a from resolved windows around fr and fa.
+    """
     from sawsim.sp_specs import MODEL_SPECS
     c = _load(config)
     spec = MODEL_SPECS.get(c.get('model_id', 'sp_single_layer'))
@@ -377,6 +470,10 @@ def locate(config, *, zoom_points: int = 101, on_progress=None) -> dict:
                     history=history, last=nz)
     z['coarse'] = coarse
     z['history'] = history
+    if with_q is None:
+        with_q = bool(c.get('beta_dk') or c.get('eta_eps'))
+    if with_q:
+        z = _add_quality(z, c, on_progress)
     return z
 
 
@@ -408,14 +505,19 @@ def converge(config, *, factor: float = 0.5, on_progress=None) -> dict:
     fine = run(_with(c, mesh_um=fine_mesh, **band), on_progress=on_progress)
     if not fine.get('ok'):
         return fine
+    if base.get('quality'):
+        fine = _add_quality(fine, _with(c, mesh_um=fine_mesh), on_progress)
     d = compare(base, fine)
+    for key in ('q_r', 'q_a'):
+        if base.get(key) and fine.get(key):
+            d[key + '_rel_change'] = round((fine[key] - base[key]) / base[key], 5)
     step = base['frequency_step_mhz']
     shift = max(abs(d['fr_diff_mhz'] or 0), abs(d['fa_diff_mhz'] or 0))
     return dict(ok=True, mesh_um=[mesh, fine_mesh],
                 coarse=dict(fr_ghz=base['fr_ghz'], fa_ghz=base['fa_ghz'], k2eff=base['k2eff'], dofs=base['dofs'],
-                            output_dir=base['output_dir']),
+                            q_r=base.get('q_r'), q_a=base.get('q_a'), output_dir=base['output_dir']),
                 fine=dict(fr_ghz=fine['fr_ghz'], fa_ghz=fine['fa_ghz'], k2eff=fine['k2eff'], dofs=fine['dofs'],
-                          output_dir=fine['output_dir']),
+                          q_r=fine.get('q_r'), q_a=fine.get('q_a'), output_dir=fine['output_dir']),
                 shift=d, frequency_step_mhz=step, uncertainty_mhz=base['uncertainty_mhz'],
                 note=('fr/fa moved %.3f MHz on mesh refinement (sampling uncertainty +/-%.3f MHz). '
                       'Judge convergence against your tolerance; the finer result is the better estimate.'

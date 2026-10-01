@@ -37,6 +37,10 @@ class SimulationConfig(BaseModel):
     stop_ghz: float = Field(2.7, gt=0)
     points: int = Field(41, ge=3, le=1201, strict=True)
     voltage: float = Field(1.0, gt=0)
+    # Loss as in the reference FEM models, on the piezoelectric layer (and its PML) only:
+    # Rayleigh stiffness damping K_uu -> K_uu (1 + i beta_dk w) [s], dielectric loss eps -> eps (1 - i eta_eps).
+    beta_dk: float = Field(0.0, ge=0, le=1e-10)
+    eta_eps: float = Field(0.0, ge=0, le=0.1)
 
     @model_validator(mode='before')
     @classmethod
@@ -87,6 +91,8 @@ class SimulationConfig(BaseModel):
                 raise ValueError('2.5D 薄片模型需要 aperture_um')
         elif self.aperture_um is not None:
             raise ValueError('aperture_um 仅适用于 2.5D Hex27 薄片模型')
+        if self.model_id.startswith('sp_2p5d_') and (self.beta_dk or self.eta_eps):
+            raise ValueError('材料损耗（beta_dk / eta_eps）目前仅支持二维模板')
         if self.mode_extension not in spec['supported_mode_extensions']:
             raise ValueError('该模型不支持所选 ME 模式')
         if spec.get('layer_count_range'):

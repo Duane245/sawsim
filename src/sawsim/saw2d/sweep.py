@@ -310,6 +310,17 @@ class FrequencySolver:
 
         self._pardiso = None
         self._pardiso_pid = None
+        self._T = T
+        self.beta = 0.0
+
+    def set_damping(self, D: sp.spmatrix, beta: float):
+        """Add Rayleigh stiffness damping: A = K + i w beta D - w^2 M (D: damped part of K_uu)."""
+        Dm = (self._T.T @ D.tocsr() @ self._T).tocsr()
+        s = np.zeros(self.gdof)
+        s[self.zheng] = 1.0
+        self.Dm_s = np.asarray(Dm @ s).ravel()
+        self.Dm_aa = Dm[self.active][:, self.active].tocsr()
+        self.beta = float(beta)
 
     # -- 后端：每进程独立的 PARDISO 求解器（fork 安全）--
     def _backend(self):
@@ -324,11 +335,15 @@ class FrequencySolver:
     def solve(self, omega: float, V: float = 1.0):
         """求解单个角频率 ``omega``，返回 ``(disp, Q, Y)``。"""
         w2 = omega ** 2
-        rhs = -(self.Km_s - w2 * self.Mm_s)[self.active] * V
+        Ks, Ka = self.Km_s, self.Km_aa
+        if self.beta:                                       # Rayleigh 刚度阻尼 K + i w beta D
+            Ks = Ks + 1j * omega * self.beta * self.Dm_s
+            Ka = Ka + 1j * omega * self.beta * self.Dm_aa
+        rhs = -(Ks - w2 * self.Mm_s)[self.active] * V
         n = self.n_active
 
         # A = -omega^2 M + K（有源块）；实数分块后稀疏模式与频率无关
-        A2 = _realblock((self.Km_aa - w2 * self.Mm_aa).tocsr())
+        A2 = _realblock((Ka - w2 * self.Mm_aa).tocsr())
         b2 = np.concatenate([rhs.real, rhs.imag])
 
         ps = self._backend()
