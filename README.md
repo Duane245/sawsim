@@ -83,7 +83,7 @@ sawsim converge '{"model_id": "sp_tcsaw"}'    # 网格加密检查
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/readme_validation_dark.png">
   <img alt="SawSim 与参考有限元解的比较" src="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/readme_validation_light.png" width="100%">
 </picture>
-<sub>左：TC-SAW 周期单元的导纳，SawSim（实线）与参考有限元解（圆点，每 4 个采样点显示 1 个）。右：九个模板的谐振与反谐振频率偏差。</sub>
+<sub>左：IHP-SAW 周期单元（LiTaO₃ 0.6 µm / SiO₂ / poly-Si / Si）的导纳，SawSim（实线）与参考有限元解（圆点，每 4 个采样点显示 1 个，含峰、谷采样点）。右：九个模板的谐振与反谐振频率偏差。</sub>
 </div>
 
 ## 文档

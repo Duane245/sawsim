@@ -1,4 +1,4 @@
-"""README figure: (a) TC-SAW admittance, SawSim vs reference; (b) fr/fa deviation of all nine templates.
+"""README figure: (a) IHP-SAW admittance, SawSim vs reference; (b) fr/fa deviation of all nine templates.
 
 Writes docs/figures/readme_validation_{light,dark}.png. Run from the repo root: python docs/figures/make_readme_figure.py
 """
@@ -27,9 +27,13 @@ for mid, name in TEMPLATES:
     z = np.load('tests/data/%s.npz' % mid)
     r, s = resonances(z['frequency_hz'], z['reference_magnitude']), resonances(z['frequency_hz'], z['sawsim_magnitude'])
     rows.append((name, (s['fr_ghz'] - r['fr_ghz']) * 1e3, (s['fa_ghz'] - r['fa_ghz']) * 1e3))
-tc = np.load('tests/data/sp_tcsaw.npz')
-f = tc['frequency_hz'] * 1e-9
+# Panel (a): the 2D IHP-SAW cell (fr/fa deviation 0.00 / 0.00 MHz), window around the main resonance.
+tc = np.load('tests/data/sp_quad_layer.npz')
 r_tc, s_tc = resonances(tc['frequency_hz'], tc['reference_magnitude']), resonances(tc['frequency_hz'], tc['sawsim_magnitude'])
+win = (tc['frequency_hz'] >= 1.65e9) & (tc['frequency_hz'] <= 1.95e9)
+f = tc['frequency_hz'][win] * 1e-9
+sim, ref = tc['sawsim_magnitude'][win], tc['reference_magnitude'][win]
+shown = sorted(set(range(0, len(f), 4)) | {int(np.argmax(ref)), int(np.argmin(ref))})
 
 
 def draw(theme):
@@ -48,9 +52,8 @@ def draw(theme):
         a.tick_params(length=3, color=c['muted'])
 
     # (a) admittance
-    ax.semilogy(f, tc['sawsim_magnitude'], color=c['s1'], lw=2.0, zorder=3, solid_capstyle='round')
-    step = 4
-    ax.semilogy(f[::step], tc['reference_magnitude'][::step], ls='none', marker='o', ms=4.6, mfc=c['surface'],
+    ax.semilogy(f, sim, color=c['s1'], lw=2.0, zorder=3, solid_capstyle='round')
+    ax.semilogy(f[shown], ref[shown], ls='none', marker='o', ms=4.6, mfc=c['surface'],
                 mec=c['ref'], mew=1.1, zorder=4)
     ax.grid(True, which='major', color=c['grid'], lw=0.8)
     ax.set_xlim(f[0], f[-1])
@@ -67,7 +70,7 @@ def draw(theme):
                        Line2D([], [], ls='none', marker='o', ms=5, mfc=c['surface'], mec=c['ref'], mew=1.1,
                               label='Reference FEM')],
               loc='lower right', frameon=False, fontsize=9, labelcolor=c['ink2'])
-    ax.set_title('TC-SAW unit cell  ·  LiNbO₃ / Cu / SiO₂ / SiN', loc='left', fontsize=10.5, color=c['ink'], pad=8)
+    ax.set_title('IHP-SAW unit cell  ·  LiTaO₃ 0.6 µm / SiO₂ / poly-Si / Si', loc='left', fontsize=10.5, color=c['ink'], pad=8)
 
     # (b) fr/fa deviation dot plot
     y = np.arange(len(rows))[::-1]

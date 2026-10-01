@@ -84,7 +84,7 @@ Each template is compared with an independent reference FEM solution: the resona
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/readme_validation_dark.png">
   <img alt="SawSim compared with an independent reference FEM" src="https://raw.githubusercontent.com/Duane245/sawsim/main/docs/figures/readme_validation_light.png" width="100%">
 </picture>
-<sub>Left: admittance of the TC-SAW unit cell, SawSim (line) and reference FEM (circles, every 4th sample). Right: resonance and anti-resonance deviation of all nine templates.</sub>
+<sub>Left: admittance of the IHP-SAW unit cell (LiTaO₃ 0.6 µm / SiO₂ / poly-Si / Si), SawSim (line) and reference FEM (circles, every 4th sample plus the peak and valley samples). Right: resonance and anti-resonance deviation of all nine templates.</sub>
 </div>
 
 ## Documentation
