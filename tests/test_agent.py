@@ -135,8 +135,8 @@ def test_cli_json_stdout_is_pure(tmp_path):
 def test_load_curve_formats(tmp_path):
     f = np.linspace(1.6e9, 2.0e9, 11)
     y = 1j * f * 1e-9
-    (tmp_path / 'mag.csv').write_text('f_hz,absY\n' + '\n'.join('%r,%r' % (a, abs(b)) for a, b in zip(f, y)))
-    (tmp_path / 'cplx.csv').write_text('# GHz, Re, Im\n' + '\n'.join('%r,%r,%r' % (a * 1e-9, b.real, b.imag) for a, b in zip(f, y)))
+    (tmp_path / 'mag.csv').write_text('f_hz,absY\n' + '\n'.join('%.12g,%.12g' % (a, abs(b)) for a, b in zip(f, y)))
+    (tmp_path / 'cplx.csv').write_text('# GHz, Re, Im\n' + '\n'.join('%.12g,%.12g,%.12g' % (a * 1e-9, b.real, b.imag) for a, b in zip(f, y)))
     for name in ('mag.csv', 'cplx.csv'):
         ff, yy, _ = agent.load_curve(tmp_path / name)
         assert np.allclose(ff, f) and np.allclose(np.abs(yy), np.abs(y))

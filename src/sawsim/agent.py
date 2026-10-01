@@ -446,7 +446,11 @@ def load_curve(path):
                 rows.append([float(x) for x in line.replace(';', ',').split(',') if x.strip()])
             except ValueError:
                 continue  # header / comment
-        a = np.asarray([r for r in rows if len(r) >= 2])
+        rows = [r for r in rows if len(r) >= 2]
+        if not rows:
+            raise ValueError('no numeric rows with at least 2 columns in ' + str(p))
+        width = min(len(r) for r in rows)
+        a = np.asarray([r[:width] for r in rows])
         f = a[:, 0]
         y = a[:, 1] + 1j * a[:, 2] if a.shape[1] >= 3 else a[:, 1]
     f = np.asarray(f, dtype=float)
