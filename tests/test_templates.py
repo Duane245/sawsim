@@ -31,7 +31,7 @@ def test_template(model, tmp_path):
     diff = np.max(np.abs(mag - own) / np.abs(own))
     assert diff <= meta['regression_rtol'], f'{model}: max rel diff vs published curve {diff:.2e}'
 
-    # (b) agreement with the independent reference (below the high-order region for 2D multilayers)
+    # (b) agreement with the independent reference (sp_triple_layer: below 2.35 GHz only)
     ref = d['reference_magnitude'][idx]
     fmax = meta['reference_fmax_hz']
     mask = np.ones_like(ref, dtype=bool) if fmax is None else f <= fmax

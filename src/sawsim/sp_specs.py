@@ -27,7 +27,7 @@ def _add(identifier, name, piezo, layers, role='backing', tc=False):
         supported_mode_extensions=[0] if tc else [0,1],
         numeric_fields=_fields(4 if tc or not layers else .1,30 if tc else (12 if not layers else 3),.08 if tc else .25,.25 if tc else .8),
         layer_thickness_min_um=.02,layer_thickness_max_um=15.,
-        notes=('TC 局部网格 x/y 对应材料全局 x/z；内涂层厚度须大于电极厚度；PML厚度=4倍节距。' if tc else '底部 PML 沿用主压电材料，厚度=2倍节距。'))
+        notes=('TC 局部网格 x/y 对应材料全局 x/z；内涂层厚度须大于电极厚度；PML厚度=4倍节距。' if tc else ('底部 PML 延续最下层背衬材料，厚度=2倍节距。' if layers else '底部 PML 沿用主压电材料，厚度=2倍节距。')))
 
 _add('sp_single_layer','SP 单层',8,[])
 _add('sp_double_layer','SP 双层',.6,[('si_isotropic',8.33)])

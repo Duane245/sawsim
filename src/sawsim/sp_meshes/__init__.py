@@ -41,11 +41,12 @@ def build_mesh(config):
             mesh_rows=built['rows'], mesh_cols=built['cols'], mesh_h_near_um=built['h_near'], mesh_h_deep_um=built['h_deep'])
     else:
         raise ValueError('No multilayer mesh builder for ' + identifier)
-    mapping = {16: 0, 15: 1, pml: 0}
-    mapping.update({tag: i+2 for i,tag in enumerate(tags)})
     tc = identifier == 'sp_tcsaw'
+    # the PML continues the lowest layer: the bottom backing layer, or the piezo substrate (TC-SAW, coatings only)
+    mapping = {16: 0, 15: 1, pml: 0 if tc else len(tags) + 1}
+    mapping.update({tag: i+2 for i,tag in enumerate(tags)})
     return dict(tag_map=mapping, pml_tag=pml, pml_thickness_m=(4 if tc else 2)*p*1e-6,
         period_m=2*p*1e-6, layer_tags=tags, electrode_tag=15, piezo_tag=16,
         boundary_tags=dict(positive=17, negative=18, left=19, right=20, bottom=21),
         coordinate_note='mesh (x,y) = material global (x,z)' if tc else 'mesh (x,y) = material global (x,y)',
-        pml_material_role='primary_piezo', piezo_top_fraction=.25 if tc else None)
+        pml_material_role='primary_piezo' if tc else 'last_backing', piezo_top_fraction=.25 if tc else None)

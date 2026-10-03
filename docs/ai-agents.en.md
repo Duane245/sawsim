@@ -138,7 +138,7 @@ agents, saying only "sawsim is installed" - no field names, no reference results
 - Both agents solved 6/6 (pass: fr/fa within 2 MHz), ran mesh-refinement checks unprompted, and handled the traps: the pre-rotated TC-SAW dataset (Euler 0), ME0 for TC-SAW, and the two poly-Si records (template default chosen).
 - codex: 9.4 min, ~70 sawsim calls. Claude (remote over ssh): 16 min, 25 calls. Both reached the B2 target in 3 secant steps.
 - In A2/A3, refining the mesh from 0.5 to 0.25 um moves fr by ~0.5 MHz; the deviations above include that.
-- Issues the agents raised were fixed or documented: a cache race between concurrent identical runs (fixed, with a test); the TC-SAW SiO2 thickness is measured from the piezo surface; the 2D templates' bottom PML uses the piezo material; `converge` clamps the mesh to the template minimum.
+- Issues the agents raised were fixed or documented: a cache race between concurrent identical runs (fixed, with a test); the TC-SAW SiO2 thickness is measured from the piezo surface; `converge` clamps the mesh to the template minimum.
 - **MCP acceptance (2026-10-01)**: codex solved A1, B2, B3 through the `sawsim mcp` tools only (no sawsim command in its shell):
   26 tool calls, 16 min; it called `get_guide` first, hit the B2 target in 3 secant steps (0.97304 um, +0.09 MHz) and answered B3
   (+0.30 pp) with a `plot_curves` figure. The original A1 wording ("SiO2 721.44 nm over the electrodes") was ambiguous: the main answer

@@ -110,8 +110,8 @@ Geometry conventions: the cell is two electrodes wide (2 x pitch, one + and one 
 electrode width = metal_ratio x pitch. In sp_tcsaw the SiO2 thickness is measured **from the
 piezo surface** (it embeds the electrodes, so SiO2 above the electrode top = SiO2 - electrode_um);
 if a user gives the overcoat thickness above the electrodes, add electrode_um and say so.
-In the named 2D templates the bottom PML uses the main piezo material, also under Si backings;
-in 2.5D and sp_stack it uses the lowest backing material (see `notes` in `sawsim schema`).
+The bottom PML always continues the lowest layer's material: the bottom backing layer, or the
+piezo substrate when there is no backing (sp_single_layer, sp_tcsaw, 2.5D single).
 Independent sweeps may run in parallel; identical configs share one cached result safely.
 
 ## Pitfalls (read before mapping a user's description)

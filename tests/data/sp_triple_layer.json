@@ -45,7 +45,7 @@
   800
  ],
  "reference_fmax_hz": 2350000000.0,
- "reference_rtol": 0.055581942713473415,
+ "reference_rtol": 0.05558475563224405,
  "regression_rtol": 0.002,
  "compare_raw_slice_admittance": false,
  "source": "reference comparison 2026-09-11"

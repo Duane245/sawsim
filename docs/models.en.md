@@ -49,7 +49,7 @@ Out-of-range values are rejected when the `Model` is constructed.
 - Bloch periodic boundaries (zero phase) left and right, equivalent to an infinite periodic array; Hex27 slices are also periodic front-to-back.
 - Complex-coordinate-stretched PML at the bottom; PML thickness 2 × pitch for 2D templates (TC-SAW 4 × pitch).
 - `sp_stack`: PML 2 × pitch thick, made of the lowest backing layer's material (the piezo material when there is no backing).
-- **2D templates assign the main piezoelectric material to the PML**, also below carrier layers of multilayer stacks, following the source cases; Hex27 PMLs continue the bottom-most layer material. The convention is recorded in `metadata.json`.
+- In every template (2D and Hex27) the PML continues the bottom-most layer: the lowest carrier layer in multilayer stacks, the piezoelectric substrate in the single-layer and TC-SAW templates, as in the reference models. Recorded in `metadata.json`.
 
 ## Mesh resolution
 

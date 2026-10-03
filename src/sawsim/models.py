@@ -94,7 +94,7 @@ def build_sp_family(config):
         pml_interface_m=bottom+info['pml_thickness_m'],pml_tag=info['pml_tag'],
         pml_material_id=ids[info['tag_map'][info['pml_tag']]],
         pml_material_assignment=('lowest backing layer' if info.get('pml_material_role')=='last_backing' else
-                                 'source compatibility: primary piezo material, including under backing layers'),
+                                 'primary piezo material (lowest layer)'),
         periodic_node_pairs=len(left),material_regions=region_names,material_region_ids=region_ids,
         substrate_material=entries[config.substrate_material],electrode_material=entries[config.electrode_material],
         euler_convention=catalog['euler_convention'],euler_angles_deg=angles,bloch_phase_rad=0.0,
