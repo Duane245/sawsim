@@ -11,8 +11,8 @@ and any warnings; state which template defaults you kept.
 
 - Package source: `src/sawsim/`. Agent layer: `agent.py` (JSON operations), `metrics.py`
   (fr/fa/k2eff from a curve), `cli.py`; the guide shipped to agents is `src/sawsim/skill/SKILL.md`.
-- Solver code (`solver.py`, `saw2d/`, `hex_*`) is exported from the private web service; keep
-  numerical changes out of this repo unless the reference tests are re-run.
+- Solver code (`solver.py`, `saw2d/`, `hex_*`) is validated against `tests/data/`; any numerical
+  change must keep `tests/test_templates.py` passing (re-run the full reference comparison).
 - Tests: `pytest -q` (2D, ~30 s); `SAWSIM_TEST_ALL=1 pytest -q` adds the 2.5D Hex27 cases (minutes).
   Headless Gmsh needs libGLU (`apt install libglu1-mesa`) or `SAWSIM_VENDOR_LIB_DIR`.
 - `matlab/` is the historical MATLAB code (MIT); the Python package is AGPL-3.0.

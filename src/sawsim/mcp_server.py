@@ -17,9 +17,9 @@ from pathlib import Path
 
 PROTOCOL_VERSIONS = ('2025-06-18', '2025-03-26', '2024-11-05')
 
-INSTRUCTIONS = """SawSim simulates one periodic IDT cell of a SAW resonator (piezoelectric FEM, lossless) and
-returns the admittance Y(f) with resonance fr, antiresonance fa and k2eff. Finite-length devices (HCT) are
-not available in this local server.
+INSTRUCTIONS = """SawSim simulates one periodic IDT cell of a SAW resonator (piezoelectric FEM, lossless by default)
+and returns the admittance Y(f) with resonance fr, antiresonance fa and k2eff. Finite-length devices (HCT) are
+not part of SawSim.
 Workflow: list_templates -> describe_template -> validate_config -> locate_resonance (fr/fa/k2eff) ->
 check_convergence (mesh check) -> plot_curves to show curves. Call get_guide once for template choice,
 material conventions (pre-rotated linbo3_tc: Euler 0; sp_tcsaw: mode_extension 0), custom materials and

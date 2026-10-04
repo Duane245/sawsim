@@ -8,8 +8,10 @@ SawSim 2.1 起为 AI 编程代理（Claude Code、codex 等）提供了一套命
 
 ## 安装
 
+本页功能属于 2.1 开发版，PyPI 上的 2.0.2 还没有；在 2.1.0 发布前从 GitHub 安装：
+
 ```bash
-pip install sawsim
+pip install "sawsim[fast] @ git+https://github.com/Duane245/sawsim"
 sawsim guide                      # 打印给 AI 的使用说明（流程、字段、易错点）
 sawsim guide --install-claude     # 安装为 Claude Code skill（~/.claude/skills/sawsim/SKILL.md）
 sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.md）
@@ -63,7 +65,7 @@ sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.
 
 ## 损耗与 Q
 
-默认无损。损耗与参考有限元模型一致，**只作用于压电层（含其 PML）**，电极与其他层保持无损（二维模板；2.5D 暂不支持）：
+默认无损。损耗与参考有限元模型一致，**只作用于压电层**（单层与 TC-SAW 模板的 PML 由压电材料构成，也带损耗），电极、其他层及多层结构背衬下的 PML 保持无损（二维模板；2.5D 暂不支持）：
 - `beta_dk`（s）：Rayleigh 刚度阻尼，K_uu → K_uu(1 + i·beta_dk·ω)，即参考模型中的 β_dK（质量阻尼为 0），等效损耗因子随频率线性增大；
 - `eta_eps`：介电损耗，ε → ε(1 − i·eta_eps)，即参考模型中的 η_εS。
 
@@ -104,8 +106,8 @@ sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.
 | 模板 | 参考 fr / fa (GHz) | Δfr / Δfa (MHz) |
 |---|---|---|
 | sp_single_layer | 1.80791 / 1.87557 | −0.06 / 0.00 |
-| sp_double_layer | 1.82363 / 1.90406 | 0.00 / 0.00 |
-| sp_triple_layer | 1.75860 / 1.84383 | −0.45 / −0.43 |
+| sp_double_layer | 1.82362 / 1.90406 | 0.00 / 0.00 |
+| sp_triple_layer | 1.75860 / 1.84384 | −0.45 / −0.43 |
 | sp_quad_layer | 1.75859 / 1.84382 | 0.00 / 0.00 |
 | sp_tcsaw | 1.75891 / 1.81852 | −0.09 / −0.16 |
 | sp_2p5d_single_layer | 1.80791 / 1.87554 | −0.08 / −0.03 |
@@ -123,14 +125,14 @@ sawsim guide --install-codex      # 写入 codex 全局指令（~/.codex/AGENTS.
 | 题 | 内容 | 判分依据 | codex (gpt-6-astra) | Claude Code (Opus) |
 |---|---|---|---|---|
 | A1 | 按工程描述复现 TC-SAW 参考模型 | 参考 fr/fa 1.75891 / 1.81852 GHz | 1.75882 / 1.81833 ✓ | 1.7588 / 1.8183 ✓ |
-| A2 | 复现 LT 薄膜 / Si | 1.82363 / 1.90406 | 1.82307 / 1.90365 ✓ | 1.8231 / 1.9037 ✓ |
+| A2 | 复现 LT 薄膜 / Si | 1.82362 / 1.90406 | 1.82307 / 1.90365 ✓ | 1.8231 / 1.9037 ✓ |
 | A3 | 复现 IHP-SAW 四层 | 1.75859 / 1.84382 | 1.75813 / 1.84347 ✓ | 1.7581 / 1.8435 ✓ |
 | B1 | 默认单层模板 fr/fa/k² | 1.80777 / 1.87557，8.92 % | 1.80779 / 1.87559，8.92 % ✓ | 1.8078 / 1.8756，8.92 % ✓ |
 | B2 | 调节周期使 fr = 1.7975 GHz ± 2 MHz | 隐藏答案 0.9731 µm | 0.97307 µm，+0.04 MHz ✓ | 0.97304 µm，+0.09 MHz ✓ |
 | B3 | 金属化比 0.4 vs 0.6 的 k² 差及网格收敛判断 | +0.29 个百分点，网格误差 ≤ 0.03 | +0.30，判定显著 ✓ | +0.30，判定显著 ✓ |
 
 - 两个代理 6 题全对（通过标准：fr/fa 偏差 ≤ 2 MHz），都主动做了网格加密检查，并正确处理了易错点：TC-SAW 数据已预旋转、欧拉角保持 0；TC-SAW 只能用 ME0；多晶硅有两条材料记录，选了模板默认的那条。
-- codex 用时 9.4 分钟、调用 sawsim 约 70 次；Claude 经 ssh 远程调用，用时 16 分钟、调用 25 次。两者都用割线法 3 步命中 B2 的目标频率。
+- codex 用时 9.4 分钟、调用 sawsim 约 70 次；Claude Code 用时 16 分钟、调用 25 次。两者都用割线法 3 步命中 B2 的目标频率。
 - A2/A3 的网格从 0.5 µm 加密到 0.25 µm 后，fr 移动约 0.5 MHz。报告的偏差已包含这部分。
 - 代理指出的问题已修正或写进说明：同一配置并发运行时缓存冲突（已修复，并加了测试）；TC-SAW 的 SiO₂ 厚度从压电表面量起；`converge` 会把网格限制在模板下限。
 - **MCP 验收（2026-10-01）**：codex 只通过 `sawsim mcp` 工具（shell 中无 sawsim 命令）完成 A1、B2、B3：共 26 次工具调用、16 分钟；

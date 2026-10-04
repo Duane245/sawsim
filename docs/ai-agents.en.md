@@ -9,8 +9,10 @@ and check mesh convergence without reading Python source or parsing curve files.
 
 ## Install
 
+These features belong to the 2.1 development version and are not in 2.0.2 on PyPI; until 2.1.0 is released, install from GitHub:
+
 ```bash
-pip install sawsim
+pip install "sawsim[fast] @ git+https://github.com/Duane245/sawsim"
 sawsim guide                      # print the agent guide (workflow, fields, pitfalls)
 sawsim guide --install-claude     # install it as a Claude Code skill (~/.claude/skills/sawsim/SKILL.md)
 sawsim guide --install-codex      # add it to codex's global instructions (~/.codex/AGENTS.md)
@@ -65,8 +67,9 @@ cached in `$SAWSIM_RUNS_DIR` (default `~/.sawsim/runs`); figures go to `~/.sawsi
 
 ## Loss and Q
 
-Lossless by default. Loss follows the reference FEM models and acts **on the piezoelectric layer (and its PML) only**;
-electrodes and other layers stay lossless (2D templates; 2.5D not yet):
+Lossless by default. Loss follows the reference FEM models and acts **on the piezoelectric layer only** (in the single-layer and
+TC-SAW templates the PML is made of the piezo material and is lossy too); electrodes, other layers and the PML below backing
+layers stay lossless (2D templates; 2.5D not yet):
 - `beta_dk` (s): Rayleigh stiffness damping, K_uu → K_uu(1 + i·beta_dk·ω), β_dK of the reference models (mass damping 0); the equivalent
   loss factor grows linearly with frequency;
 - `eta_eps`: dielectric loss, ε → ε(1 − i·eta_eps), η_εS of the reference models.
@@ -110,8 +113,8 @@ fr/fa extracted with `sawsim.metrics` from the validation data (`tests/data/`), 
 | template | reference fr / fa (GHz) | Δfr / Δfa (MHz) |
 |---|---|---|
 | sp_single_layer | 1.80791 / 1.87557 | −0.06 / 0.00 |
-| sp_double_layer | 1.82363 / 1.90406 | 0.00 / 0.00 |
-| sp_triple_layer | 1.75860 / 1.84383 | −0.45 / −0.43 |
+| sp_double_layer | 1.82362 / 1.90406 | 0.00 / 0.00 |
+| sp_triple_layer | 1.75860 / 1.84384 | −0.45 / −0.43 |
 | sp_quad_layer | 1.75859 / 1.84382 | 0.00 / 0.00 |
 | sp_tcsaw | 1.75891 / 1.81852 | −0.09 / −0.16 |
 | sp_2p5d_single_layer | 1.80791 / 1.87554 | −0.08 / −0.03 |
@@ -129,14 +132,14 @@ agents, saying only "sawsim is installed" - no field names, no reference results
 | task | content | graded against | codex (gpt-6-astra) | Claude Code (Opus) |
 |---|---|---|---|---|
 | A1 | reproduce a TC-SAW reference model from an engineering description | reference fr/fa 1.75891 / 1.81852 GHz | 1.75882 / 1.81833 ✓ | 1.7588 / 1.8183 ✓ |
-| A2 | reproduce LT film / Si | 1.82363 / 1.90406 | 1.82307 / 1.90365 ✓ | 1.8231 / 1.9037 ✓ |
+| A2 | reproduce LT film / Si | 1.82362 / 1.90406 | 1.82307 / 1.90365 ✓ | 1.8231 / 1.9037 ✓ |
 | A3 | reproduce IHP-SAW four-layer | 1.75859 / 1.84382 | 1.75813 / 1.84347 ✓ | 1.7581 / 1.8435 ✓ |
 | B1 | default single-layer fr/fa/k² | 1.80777 / 1.87557, 8.92 % | 1.80779 / 1.87559, 8.92 % ✓ | 1.8078 / 1.8756, 8.92 % ✓ |
 | B2 | tune pitch to fr = 1.7975 GHz ± 2 MHz | hidden answer 0.9731 um | 0.97307 um, +0.04 MHz ✓ | 0.97304 um, +0.09 MHz ✓ |
 | B3 | k² difference, metal ratio 0.4 vs 0.6, and mesh-convergence verdict | +0.29 pp, mesh error <= 0.03 | +0.30, significant ✓ | +0.30, significant ✓ |
 
 - Both agents solved 6/6 (pass: fr/fa within 2 MHz), ran mesh-refinement checks unprompted, and handled the traps: the pre-rotated TC-SAW dataset (Euler 0), ME0 for TC-SAW, and the two poly-Si records (template default chosen).
-- codex: 9.4 min, ~70 sawsim calls. Claude (remote over ssh): 16 min, 25 calls. Both reached the B2 target in 3 secant steps.
+- codex: 9.4 min, ~70 sawsim calls. Claude Code: 16 min, 25 calls. Both reached the B2 target in 3 secant steps.
 - In A2/A3, refining the mesh from 0.5 to 0.25 um moves fr by ~0.5 MHz; the deviations above include that.
 - Issues the agents raised were fixed or documented: a cache race between concurrent identical runs (fixed, with a test); the TC-SAW SiO2 thickness is measured from the piezo surface; `converge` clamps the mesh to the template minimum.
 - **MCP acceptance (2026-10-01)**: codex solved A1, B2, B3 through the `sawsim mcp` tools only (no sawsim command in its shell):

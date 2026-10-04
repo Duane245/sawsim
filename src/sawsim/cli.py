@@ -203,12 +203,6 @@ def cmd_mcp(args):
     return serve()
 
 
-def cmd_serve(args):
-    print("`sawsim serve` (a local graphical interface) is not available yet; use the command line, "
-          "the Python API or `sawsim mcp`.", file=sys.stderr)
-    return 2
-
-
 def main(argv=None):
     p = argparse.ArgumentParser(prog="sawsim", description="SawSim unit-cell piezoelectric FEM. "
                                 "AI agents: run `sawsim guide` first; add --json, or use the JSON-only commands "
@@ -291,7 +285,6 @@ def main(argv=None):
                     help="print the client configuration snippet instead of serving")
     mc.set_defaults(fn=cmd_mcp)
 
-    se = sub.add_parser("serve", help="local graphical interface (not available yet)"); se.set_defaults(fn=cmd_serve)
     args = p.parse_args(argv)
     return args.fn(args)
 

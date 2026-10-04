@@ -43,7 +43,7 @@ FIELD_DOCS = {
     'stop_ghz': 'sweep stop frequency, GHz',
     'points': 'number of frequency points (3..1201); cost is linear in points',
     'voltage': 'drive voltage, V (admittance is independent of it)',
-    'beta_dk': 'Rayleigh stiffness damping of the piezoelectric layer and its PML, K_uu -> K_uu(1 + i beta_dk w), '
+    'beta_dk': 'Rayleigh stiffness damping of the piezoelectric layer (and a PML made of it), K_uu -> K_uu(1 + i beta_dk w), '
                'in s (beta_dK of the reference FEM models; e.g. 1e-13 for TC-SAW, 3e-14 for IHP-SAW); 0 = lossless. 2D templates only',
     'eta_eps': 'dielectric loss factor of the piezoelectric material, eps -> eps(1 - i eta_eps) (eta_epsilonS of the reference models; '
                'e.g. 1.5e-3); other materials stay lossless. 2D templates only',

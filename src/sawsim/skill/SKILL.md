@@ -6,12 +6,14 @@ description: Simulate SAW (surface acoustic wave) resonator unit cells with the 
 # SawSim for agents
 
 SawSim solves the coupled piezoelectric FEM of **one periodic IDT cell** (infinite periodic
-resonator, lossless) and returns the admittance Y(f). Finite-length devices (reflectors,
+resonator, lossless by default) and returns the admittance Y(f). Finite-length devices (reflectors,
 aperture, bus bars, HCT) are **not** in this package - say so if asked.
 
 Every command below prints exactly one JSON object on stdout (progress on stderr); exit code 1
 means `"ok": false` with an `error`/`errors` field. Runs are cached by config hash under
 `$SAWSIM_RUNS_DIR` (default `./sawsim_runs`), so repeating a config is free.
+Install with `sawsim[fast]` (MKL PARDISO); without pypardiso the SciPy SuperLU fallback adds
+~1e-4 relative numerical noise, so do not interpret differences of that size.
 
 ## Workflow
 
@@ -51,8 +53,9 @@ If the `sawsim` MCP server is connected, the same operations are tools (`locate_
 
 ## Loss and Q
 
-Lossless unless set. Loss follows the reference FEM models, on the **piezoelectric layer (and
-its PML) only**; electrodes and other layers stay lossless (2D templates; 2.5D not yet):
+Lossless unless set. Loss follows the reference FEM models, on the **piezoelectric layer only**
+(a PML made of the piezo material - single layer, TC-SAW - is lossy too; electrodes, other layers
+and the PML under backing layers stay lossless; 2D templates, 2.5D not yet):
 - `beta_dk` [s]: Rayleigh stiffness damping, K_uu -> K_uu(1 + i beta_dk w) (beta_dK; mass
   damping 0). Equivalent loss factor beta_dk * w grows with frequency.
 - `eta_eps`: dielectric loss, eps -> eps(1 - i eta_eps) (eta_epsilonS).

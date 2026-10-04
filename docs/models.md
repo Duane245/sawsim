@@ -30,7 +30,7 @@
 | `mesh_um` | 网格控制尺寸 | 0.5（TC 0.1，Hex27 0.2 – 0.217） |
 | `start_ghz`, `stop_ghz`, `points` | 频段与频点数（3 – 401） | 模板决定，41 点 |
 | `voltage` | 激励电压 | 1 |
-| `beta_dk`, `eta_eps` | 损耗（二维模板，仅压电层及其 PML，与参考有限元模型一致）：Rayleigh 刚度阻尼 K_uu(1 + i·beta_dk·ω)，介电损耗 ε(1 − i·eta_eps) | 0（无损） |
+| `beta_dk`, `eta_eps` | 损耗（二维模板，仅压电层，与参考有限元模型一致；PML 为压电材料时随之带损耗）：Rayleigh 刚度阻尼 K_uu(1 + i·beta_dk·ω)，介电损耗 ε(1 − i·eta_eps) | 0（无损） |
 | `mode_extension` | 0 = ME0，1 = ME1 | 1（TC-SAW 仅 0） |
 | `substrate_material`, `electrode_material` | 材料 id | `sp_baseline`, `al`（TC：`linbo3_tc`, `cu`） |
 | `euler_phi_deg`, `euler_theta_deg`, `euler_psi_deg` | 主压电层 ZXZ 欧拉角 | 见材料文档 |
@@ -69,4 +69,4 @@
 
 - 2.5D Hex27 内核的 γ<sub>yz</sub> 应变项缺少 ∂u<sub>z</sub>/∂y，为保持与原始数值可对照而保留，已在元数据标注；不应据此推断通用三维精度。
 - Hex27 组装前限制最多 2000 个体单元、30000 节点，超过时报错并提示放粗网格。
-- 2D 多层模板在约 2.4 GHz 以上的高阶模态区与参考解存在可见偏差，见 [验证](validation.md)。
+- `sp_triple_layer` 的 fr/fa 比参考解低约 0.45 MHz，2.4 GHz 以上高阶模态的峰值也有偏差，原因尚在核查；`sp_2p5d_single_layer` 在 1.93 – 2.2 GHz 有小幅波动。见 [验证](validation.md)。

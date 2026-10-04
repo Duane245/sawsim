@@ -30,7 +30,7 @@ Ten single-period (SP) unit-cell templates; `sp_stack` is a generic 2D stack wit
 | `mesh_um` | Mesh size control | 0.5 (TC 0.1, Hex27 0.2 – 0.217) |
 | `start_ghz`, `stop_ghz`, `points` | Band and number of points (3 – 401) | template, 41 points |
 | `voltage` | drive voltage | 1 |
-| `beta_dk`, `eta_eps` | loss (2D templates, piezoelectric layer and its PML only, as in the reference FEM models): Rayleigh stiffness damping K_uu(1 + i·beta_dk·ω), dielectric loss ε(1 − i·eta_eps) | 0 (lossless) |
+| `beta_dk`, `eta_eps` | loss (2D templates, piezoelectric layer only, as in the reference FEM models; a PML made of the piezo material is lossy too): Rayleigh stiffness damping K_uu(1 + i·beta_dk·ω), dielectric loss ε(1 − i·eta_eps) | 0 (lossless) |
 | `mode_extension` | 0 = ME0, 1 = ME1 | 1 (TC-SAW: 0 only) |
 | `substrate_material`, `electrode_material` | Material ids | `sp_baseline`, `al` (TC: `linbo3_tc`, `cu`) |
 | `euler_phi_deg`, `euler_theta_deg`, `euler_psi_deg` | ZXZ Euler angles of the main piezo layer | see materials doc |
@@ -69,4 +69,4 @@ Out-of-range values are rejected when the `Model` is constructed.
 
 - The 2.5D Hex27 kernel lacks the ∂u<sub>z</sub>/∂y term in the γ<sub>yz</sub> strain; it is kept for comparability with the original numbers and flagged in the metadata. Do not infer general 3D accuracy from it.
 - Hex27 assembly is capped at 2000 volume elements / 30000 nodes; larger meshes are rejected with a hint to coarsen.
-- 2D multilayer templates deviate from the reference above about 2.4 GHz in the higher-order mode region; see [Validation](validation.en.md).
+- `sp_triple_layer` is about 0.45 MHz below the reference in fr/fa and its higher-order mode peaks above 2.4 GHz differ; the cause is under investigation. `sp_2p5d_single_layer` shows a small ripple between 1.93 and 2.2 GHz. See [Validation](validation.en.md).

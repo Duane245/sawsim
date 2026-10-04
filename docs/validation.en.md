@@ -28,7 +28,7 @@ frequency step.
 
 The 2.5D single-layer curve shows a small ripple between 1.93 and 2.2 GHz where the reference is smooth; fr and fa are not affected. Both figures are generated from `tests/data/` by `python docs/figures/make_validation_figures.py`.
 
-Peak and valley |Y| amplitudes are not used as an accuracy measure: the solver model is lossless, the resonance and
+Peak and valley |Y| amplitudes are not used as an accuracy measure: the validation runs are lossless, the resonance and
 anti-resonance are a pole and a zero, the amplitude at a sample depends on how close it falls to the pole, and the frequency
 step is much coarser than the linewidth. Comparing peak/valley amplitudes or Q needs the same loss on both sides and a step
 finer than the linewidth (see [Driving SawSim with AI agents](ai-agents.en.md)). The 2.5D templates compare the total slice

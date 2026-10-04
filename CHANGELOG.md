@@ -22,9 +22,9 @@ Key user-facing changes per release. / 各版本的关键更新。
   通用二维叠层 `sp_stack`：0–6 层背衬 + 0–3 层覆盖，结构化 Q9 网格；与五个二维模板的 fr/fa 相差 ≤ 0.1 MHz。
 - Custom materials from crystal-class constants (isotropic, cubic, 6mm, 3m): `sawsim materials --create`.<br>
   由晶系独立常数（各向同性、立方、6mm、3m）生成自定义材料：`sawsim materials --create`。
-- Material loss as in the reference FEM models, on the piezoelectric layer and its PML: Rayleigh stiffness damping
+- Material loss as in the reference FEM models, on the piezoelectric layer only: Rayleigh stiffness damping
   `beta_dk` and dielectric loss `eta_eps`; `locate` resolves Q_r / Q_a.<br>
-  与参考有限元模型一致的材料损耗，作用于压电层及其 PML：Rayleigh 刚度阻尼 `beta_dk` 与介电损耗 `eta_eps`；`locate` 给出 Q_r / Q_a。
+  与参考有限元模型一致的材料损耗，仅作用于压电层：Rayleigh 刚度阻尼 `beta_dk` 与介电损耗 `eta_eps`；`locate` 给出 Q_r / Q_a。
 - At least 8 second-order elements per wavelength laterally in every template.<br>
   所有模板横向每个波长至少 8 个二阶单元。
 

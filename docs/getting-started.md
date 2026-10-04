@@ -5,8 +5,8 @@
 ## 安装
 
 ```bash
-pip install sawsim      # 开发版：pip install git+https://github.com/Duane245/sawsim
-pip install "sawsim[fast]"                                # 可选：pypardiso（MKL PARDISO 直接求解器）
+pip install "sawsim[fast]"                                              # PyPI 稳定版，含 pypardiso（MKL PARDISO，推荐）
+pip install "sawsim[fast] @ git+https://github.com/Duane245/sawsim"    # 2.1 开发版
 ```
 
 要求 Python ≥ 3.8。依赖 numpy、scipy、matplotlib、gmsh、pydantic 会自动安装。
@@ -36,7 +36,7 @@ r.peak_frequency_ghz     # 采样点上的 |Y| 最大值对应频率
 命令行等价写法：
 
 ```bash
-sawsim templates                              # 列出 9 种模板
+sawsim templates                              # 列出 10 种模板
 sawsim run config.json -o out/double_layer    # config.json 见下
 ```
 
@@ -75,7 +75,7 @@ def on_progress(event):            # {'stage','completed','total','elapsed_secon
 sweep(m, "out/x", on_progress=on_progress)
 ```
 
-频点数大于 41 时扫频按频点多进程并行（默认最多 8 个进程，`SAW_SWEEP_WORKERS` 可调）；每个进程 BLAS 单线程。装了 pypardiso 时使用 MKL PARDISO，否则回退 SciPy SuperLU，两者结果相对差约 1e-4。
+频点数大于 41 时扫频按频点多进程并行（默认最多 8 个进程，`SAW_SWEEP_WORKERS` 可调）；每个进程 BLAS 单线程。装了 pypardiso 时使用 MKL PARDISO，否则回退 SciPy SuperLU，结果带有约 1e-4 的相对数值噪声，建议安装 `sawsim[fast]`。
 
 ## 自定义材料
 

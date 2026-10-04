@@ -14,7 +14,7 @@ for the frequency-domain simulation and design of Surface Acoustic Wave (SAW) re
 ![Python](https://img.shields.io/badge/Postprocess-Python%20%2F%20matplotlib-3776AB?logo=python&logoColor=white)
 ![Method](https://img.shields.io/badge/Method-Piezoelectric%20FEM%20%2B%20PML-555555)
 ![Cases](https://img.shields.io/badge/Case%20library-17%20models-2E8B57)
-[![Demo](https://img.shields.io/badge/Demo-2D%20TCSAW-FF6F00)](2DTCSAW/)
+[![Demo](https://img.shields.io/badge/Demo-2D%20TCSAW-FF6F00)](SP_2D_TCSAW/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Changelog](https://img.shields.io/badge/Changelog-keepachangelog-E05735)](CHANGELOG.md)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20362278.svg)](https://doi.org/10.5281/zenodo.20362278)
@@ -332,4 +332,4 @@ All demos produce `Y11.mat` + mesh / displacement / potential / Y₁₁ admittan
 
 Discussions on SAW simulation, piezoelectric FEM and PML implementations are very welcome; academic collaborations, industry consulting and pull requests are equally welcome.
 
-- 🐛 **Issues** · [GitHub Issues](../../issues) — bug reports and feature requests
+- 🐛 **Issues** · [GitHub Issues](https://github.com/Duane245/sawsim/issues) — bug reports and feature requests

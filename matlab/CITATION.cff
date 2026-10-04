@@ -10,8 +10,6 @@ abstract: >
 authors:
   - family-names: Duan
     given-names: Shaoqing
-    # orcid: "https://orcid.org/0000-0000-0000-0000"   # 有就反注释并填
-    # affiliation: ""                                    # 单位（可留空）
 repository-code: "https://github.com/Duane245/sawsim"
 url: "https://github.com/Duane245/sawsim"
 license: MIT

@@ -14,7 +14,7 @@
 ![Python](https://img.shields.io/badge/Postprocess-Python%20%2F%20matplotlib-3776AB?logo=python&logoColor=white)
 ![Method](https://img.shields.io/badge/Method-Piezoelectric%20FEM%20%2B%20PML-555555)
 ![Cases](https://img.shields.io/badge/算例库-17%20models-2E8B57)
-[![Demo](https://img.shields.io/badge/Demo-2D%20TCSAW-FF6F00)](2DTCSAW/)
+[![Demo](https://img.shields.io/badge/Demo-2D%20TCSAW-FF6F00)](SP_2D_TCSAW/)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 [![Changelog](https://img.shields.io/badge/Changelog-keepachangelog-E05735)](CHANGELOG.md)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20362278.svg)](https://doi.org/10.5281/zenodo.20362278)
@@ -332,4 +332,4 @@ python mesh/FP_3D_4ceng.py           # → mesh/FP_3D_4ceng.m
 
 欢迎围绕 SAW 仿真、压电有限元、PML 实现等话题交流;亦欢迎学术合作、工程项目咨询与代码改进 PR。
 
-- 🐛 **缺陷反馈** · [GitHub Issues](../../issues) —— Bug 报告与功能建议
+- 🐛 **缺陷反馈** · [GitHub Issues](https://github.com/Duane245/sawsim/issues) —— Bug 报告与功能建议

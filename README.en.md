@@ -32,9 +32,11 @@ Full history in the [CHANGELOG](https://github.com/Duane245/sawsim/blob/main/CHA
 ## Install and use
 
 ```bash
-pip install sawsim
-pip install "sawsim[fast]"     # optional: MKL PARDISO direct solver
+pip install "sawsim[fast]"     # stable 2.0.2 from PyPI with the MKL PARDISO direct solver (recommended)
+pip install "sawsim[fast] @ git+https://github.com/Duane245/sawsim"   # 2.1 development version: agent commands below, loss and Q, sp_stack
 ```
+
+Without `[fast]` the solver falls back to SciPy SuperLU, with relative numerical noise of about 10⁻⁴.
 
 ```python
 from sawsim import Model, sweep
@@ -48,7 +50,7 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
-**AI agents** (Claude Code, codex, …): every command can print JSON with fr, fa, k²eff and warnings. Run the install command once **on the machine where the agent runs**, in the Python environment that has sawsim, then start a new session and ask in plain language (e.g. "use sawsim to get fr and k² of the TC-SAW cell").
+**AI agents** (Claude Code, codex, …; 2.1 development version): every command can print JSON with fr, fa, k²eff and warnings. Run the install command once **on the machine where the agent runs**, in the Python environment that has sawsim, then start a new session and ask in plain language (e.g. "use sawsim to get fr and k² of the TC-SAW cell").
 
 ```bash
 sawsim guide --install-claude                 # Claude Code: install as a skill (~/.claude/skills/sawsim)

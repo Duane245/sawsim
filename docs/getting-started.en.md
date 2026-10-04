@@ -5,8 +5,8 @@
 ## Install
 
 ```bash
-pip install sawsim      # development version: pip install git+https://github.com/Duane245/sawsim
-pip install "sawsim[fast]"                                # optional: pypardiso (MKL PARDISO direct solver)
+pip install "sawsim[fast]"                                              # stable release from PyPI with pypardiso (MKL PARDISO, recommended)
+pip install "sawsim[fast] @ git+https://github.com/Duane245/sawsim"    # 2.1 development version
 ```
 
 Python ≥ 3.8. numpy, scipy, matplotlib, gmsh and pydantic are installed automatically.
@@ -36,7 +36,7 @@ r.peak_frequency_ghz     # frequency of the largest sampled |Y|
 Command-line equivalent:
 
 ```bash
-sawsim templates                              # list the 9 templates
+sawsim templates                              # list the 10 templates
 sawsim run config.json -o out/double_layer    # config.json below
 ```
 
@@ -75,7 +75,7 @@ def on_progress(event):            # {'stage','completed','total','elapsed_secon
 sweep(m, "out/x", on_progress=on_progress)
 ```
 
-Sweeps with more than 41 points run frequency points in parallel processes (up to 8 by default, `SAW_SWEEP_WORKERS` overrides); each process uses single-threaded BLAS. With pypardiso installed the linear solver is MKL PARDISO, otherwise SciPy SuperLU; the two agree to about 1e-4 relative.
+Sweeps with more than 41 points run frequency points in parallel processes (up to 8 by default, `SAW_SWEEP_WORKERS` overrides); each process uses single-threaded BLAS. With pypardiso installed the linear solver is MKL PARDISO, otherwise SciPy SuperLU, whose results carry relative numerical noise of about 1e-4; installing `sawsim[fast]` is recommended.
 
 ## Custom materials
 

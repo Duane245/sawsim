@@ -16,7 +16,7 @@
 
 ## Overview
 
-A self-contained MATLAB demo of a **finite-device** 2D temperature-compensated SAW resonator: a multi-finger interdigital transducer on a LiNbO₃ substrate with SiO₂ / Si₃N₄ compensation stack and Al electrodes. Unlike the [`2DTCSAW/`](../2DTCSAW/) periodic-cell demo, this case models the **entire device** (21 IDT periods, ~48 700 nodes) with floating-potential left/right end electrodes and a complex-coordinate-stretched PML at the bottom — directly matching a real chip layout.
+A self-contained MATLAB demo of a **finite-device** 2D temperature-compensated SAW resonator: a multi-finger interdigital transducer on a LiNbO₃ substrate with SiO₂ / Si₃N₄ compensation stack and Al electrodes. Unlike the [`SP_2D_TCSAW/`](../SP_2D_TCSAW/) periodic-cell demo, this case models the **entire device** (21 IDT periods, ~48 700 nodes) with floating-potential left/right end electrodes and a complex-coordinate-stretched PML at the bottom — directly matching a real chip layout.
 
 The frequency-domain sweep yields the Y₁₁ admittance curve over the band of interest.
 
@@ -72,7 +72,7 @@ The 201-point sweep takes **≈ 30 – 60 minutes** on a typical workstation (si
 
 ## SP-2D vs FP-2D — Which to Use?
 
-| Aspect | [`2DTCSAW/`](../2DTCSAW/) (SP) | `FP_2D_TCSAW/` (FP, this demo) |
+| Aspect | [`SP_2D_TCSAW/`](../SP_2D_TCSAW/) (SP) | `FP_2D_TCSAW/` (FP, this demo) |
 |---|---|---|
 | Geometry | Single IDT period | Full 21-period device |
 | Side BC | Bloch periodic | Free + floating-potential electrodes |

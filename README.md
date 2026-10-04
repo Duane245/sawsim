@@ -31,9 +31,11 @@ Piezoelectric coupled FEM for SAW resonator unit cells · Q9 / Hex27 · PML · B
 ## 安装与使用
 
 ```bash
-pip install sawsim
-pip install "sawsim[fast]"     # 可选：MKL PARDISO 直接求解器
+pip install "sawsim[fast]"     # PyPI 稳定版 2.0.2，含 MKL PARDISO 直接求解器（推荐）
+pip install "sawsim[fast] @ git+https://github.com/Duane245/sawsim"   # 2.1 开发版：下面的 AI 代理命令、损耗与 Q、sp_stack
 ```
+
+不装 `[fast]` 时回退 SciPy SuperLU，结果的相对数值噪声约 10⁻⁴。
 
 ```python
 from sawsim import Model, sweep
@@ -47,7 +49,7 @@ sawsim templates
 sawsim run config.json -o out/dbl
 ```
 
-**AI 代理**（Claude Code、codex 等）：每条命令都可输出 JSON，直接给出 fr、fa、k²eff 与警告。在**运行 AI 代理的那台机器**上、装有 sawsim 的同一 Python 环境里执行一次安装命令，然后新开一个会话，直接用自然语言提问即可（例如“用 sawsim 算一下 TC-SAW 的 fr 和 k²”）。
+**AI 代理**（Claude Code、codex 等；2.1 开发版）：每条命令都可输出 JSON，直接给出 fr、fa、k²eff 与警告。在**运行 AI 代理的那台机器**上、装有 sawsim 的同一 Python 环境里执行一次安装命令，然后新开一个会话，直接用自然语言提问即可（例如“用 sawsim 算一下 TC-SAW 的 fr 和 k²”）。
 
 ```bash
 sawsim guide --install-claude                 # Claude Code：安装为 skill（~/.claude/skills/sawsim）
