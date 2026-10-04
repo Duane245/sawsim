@@ -22,9 +22,11 @@ the same method (`sawsim.metrics`: fr = |Y| peak, fa = the following minimum, re
 fr and fa of all nine templates agree with the reference within 0.5 MHz, mostly below 0.1 MHz, and always below the
 frequency step.
 
-![2.5D SP double layer: sawsim (dashed) and reference (solid)](figures/compare_2p5d_double.png)
+![Five 2D templates: |Y| of SawSim (dashed) and the reference (solid)](figures/validation_2d.png)
 
-![Y11 of the five 2D templates](figures/fig_admittance_sp2d.png)
+![Four 2.5D templates: |Y| of SawSim (dashed) and the reference (solid)](figures/validation_2p5d.png)
+
+The 2.5D single-layer curve shows a small ripple between 1.93 and 2.2 GHz where the reference is smooth; fr and fa are not affected. Both figures are generated from `tests/data/` by `python docs/figures/make_validation_figures.py`.
 
 Peak and valley |Y| amplitudes are not used as an accuracy measure: the solver model is lossless, the resonance and
 anti-resonance are a pole and a zero, the amplitude at a sample depends on how close it falls to the pole, and the frequency

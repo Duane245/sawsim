@@ -20,9 +20,11 @@
 
 九个模板的 fr、fa 与参考解相差均在 0.5 MHz 以内，多数小于 0.1 MHz，均小于各自的频率步长。
 
-![2.5D SP 双层：sawsim（虚线）与参考解（实线）](figures/compare_2p5d_double.png)
+![五种 2D 模板：SawSim（虚线）与参考解（实线）的 |Y|](figures/validation_2d.png)
 
-![五种 2D 模板的 Y11 对比](figures/fig_admittance_sp2d.png)
+![四种 2.5D 模板：SawSim（虚线）与参考解（实线）的 |Y|](figures/validation_2p5d.png)
+
+2.5D 单层在 1.93 – 2.2 GHz 有小幅波动，参考曲线平滑；fr、fa 不受影响。两幅图由 `python docs/figures/make_validation_figures.py` 从 `tests/data/` 生成。
 
 峰、谷处的 |Y| 幅值不作为精度指标：求解模型无损，谐振与反谐振处是极点与零点，采样点上的幅值取决于它离极点有多近，
 频率步长又远大于谐振线宽。比较峰谷幅值或 Q 需要两边设置相同的损耗，并使用细于线宽的频率步长
